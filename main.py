@@ -61,7 +61,7 @@ PLAYGROUND_LABELS = {
 
 
 def build_map():
-    grid = [["R" for _ in range(MAP_COLS)] for _ in range(MAP_ROWS)]
+    grid = [["B" for _ in range(MAP_COLS)] for _ in range(MAP_ROWS)]
 
     def set_tile(x, y, value):
         if 0 <= x < MAP_COLS and 0 <= y < MAP_ROWS:
@@ -154,7 +154,7 @@ def build_map_two():
         (26, 2): "\u8299\u84c9\u6e56",
         (28, 12): "\u8299\u84c9\u6e56",
     }
-    grid = [["B" for _ in range(MAP_COLS)] for _ in range(MAP_ROWS)]
+    grid = [["R" for _ in range(MAP_COLS)] for _ in range(MAP_ROWS)]
 
     def set_tile(x, y, value):
         if 0 <= x < MAP_COLS and 0 <= y < MAP_ROWS:
