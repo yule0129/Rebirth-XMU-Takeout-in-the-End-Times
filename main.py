@@ -35,14 +35,14 @@ WALKABLE = {"R", "G", "D", "P", "F", "K", "S", "C"}
 DORM_NAMES = {
     (1, 8): "\u5357\u5149\u56ed\u533a",
     (6, 8): "\u8299\u84c9\u56ed\u533a",
-    (17, 13): "\u5b66\u751f\u6d3b\u52a8\u4e2d\u5fc3",
-    (24, 9): "\u7bee\u7403\u573a\u9001\u8fbe\u70b9",
+    (18, 13): "\u5b66\u751f\u6d3b\u52a8\u4e2d\u5fc3",
+    (24, 8): "\u7bee\u7403\u573a\u9001\u8fbe\u70b9",
 }
 
 PICKUP_NAMES = {
-    (1, 0): "\u897f\u5317\u6821\u95e8\u53d6\u9910\u70b9",
+    (0, 0): "\u897f\u5317\u6821\u95e8\u53d6\u9910\u70b9",
     (12, 7): "\u8299\u84c9\u56ed\u65c1\u53d6\u9910\u70b9",
-    (30, 0): "\u4e1c\u5317\u6821\u95e8\u53d6\u9910\u70b9",
+    (31, 0): "\u4e1c\u5317\u6821\u95e8\u53d6\u9910\u70b9",
 }
 
 CANTEENS = {}
@@ -102,11 +102,7 @@ def build_map():
     rect(14, 6, 17, 8, "R")
     rect(14, 8, 17, 12, "R")
     rect(14, 9, 16, 11, "B")
-    hroad(8, 12, 18)
-    hroad(9, 12, 18)
     vroad(17, 8, 13)
-    set_tile(17, 9, "K")
-    set_tile(17, 10, "K")
 
     # ?????????????
     vroad(17, 2, 6)
@@ -140,14 +136,14 @@ MAP_ONE_PATROLS = [
 
 def build_map_two():
     dorm_names = {
-        (11, 4): "余明培游泳馆",
+        (11, 4): "佘明培游泳馆",
         (24, 10): "\u822a\u7a7a\u822a\u5929\u5b66\u9662",
     }
     pickup_names = {
         (11, 15): "\u601d\u6e90\u9910\u5385\u53d6\u9910\u70b9",
     }
     labels = {
-        (6, 4): "余明培游泳馆",
+        (6, 4): "佘明培游泳馆",
         (8, 10): "\u7231\u79cb\u4f53\u80b2\u9986",
         (11, 15): "\u601d\u6e90\u9910\u5385",
         (20, 11): "\u822a\u7a7a\u822a\u5929\u5b66\u9662",
@@ -179,20 +175,24 @@ def build_map_two():
     rect(25, 5, 31, 16, "L")
     rect(1, 2, 11, 5, "S")
     rect(1, 7, 11, 8, "S")
-    rect(1, 11, 5, 17, "S")
+    rect(1, 11, 11, 12, "S")
+    rect(1, 14, 5, 16, "S")
     rect(14, 5, 23, 6, "S")
     rect(14, 7, 16, 16, "S")
     rect(17, 15, 23, 16, "S")
+    rect(17, 7, 24, 14, "R")
+    rect(18, 8, 23, 13, "B")
 
     rect(3, 3, 9, 5, "B")
     rect(3, 7, 9, 12, "B")
     rect(6, 14, 9, 17, "B")
     rect(18, 8, 23, 13, "B")
 
-    hroad(4, 0, 31)
-    hroad(6, 0, 24)
-    hroad(9, 0, 17)
-    hroad(13, 0, 24)
+    hroad(4, 10, 31)
+    hroad(6, 0, 13)
+    hroad(9, 0, 2)
+    hroad(9, 10, 11)
+    hroad(13, 0, 13)
     hroad(17, 0, 31)
     vroad(0, 0, 17)
     vroad(12, 0, 17)
@@ -326,7 +326,7 @@ def build_map_four():
     }
     pickup_names = {
         (0, 4): "芙蓉餐厅取餐点",
-        (15, 17): "德旺广场取餐点",
+        (16, 17): "德旺广场取餐点",
     }
     labels = {
         (3, 4): "芙蓉餐厅",
@@ -356,15 +356,31 @@ def build_map_four():
             for x in range(x1, x2 + 1):
                 set_tile(x, y, value)
 
-    rect(1, 0, 7, 7, "S")
-    rect(8, 0, 23, 5, "L")
-    rect(24, 0, 26, 5, "S")
-    rect(27, 0, 31, 5, "L")
-    rect(1, 6, 5, 7, "S")
-    rect(6, 6, 23, 6, "S")
-    rect(25, 6, 31, 7, "S")
+    rect(1, 0, 7, 5, "S")
+    rect(1, 6, 4, 6, "S")
+    rect(1, 7, 6, 7, "S")
+    set_tile(5, 5, "R")
 
-    hroad(0, 0, 31)
+    rect(8, 0, 21, 4, "L")
+    rect(7, 1, 7, 4, "L")
+    rect(6, 2, 6, 3, "L")
+    rect(22, 1, 22, 4, "L")
+    rect(23, 2, 23, 3, "L")
+    rect(8, 5, 23, 5, "S")  # 一条
+    set_tile(22, 0, "S")
+    set_tile(23, 0, "S")
+    set_tile(23, 1, "S")
+    set_tile(23, 4, "S")
+
+    rect(25, 0, 31, 7, "S")
+    rect(27, 0, 31, 2, "L")
+    rect(27, 3, 30, 3, "L")
+    rect(27, 4, 29, 4, "L")
+    rect(26, 1, 26, 3, "L")
+    rect(25, 2, 25, 4, "L")
+    set_tile(28, 5, "L")
+    
+
     hroad(8, 0, 31)
     hroad(9, 0, 31)
     hroad(17, 0, 31)
@@ -1303,14 +1319,15 @@ def draw_aerospace_building_overlay():
     if current_map_id != 1:
         return
 
-    base = pygame.Rect(16 * TILE, HUD + 8 * TILE, 7 * TILE, 7 * TILE)
-    shadow = pygame.Surface((base.w + 44, base.h + 42), pygame.SRCALPHA)
-    pygame.draw.polygon(shadow, (0, 0, 0, 82), [(28, 26), (base.w + 38, 10), (base.w + 30, base.h + 28), (10, base.h + 40)])
-    screen.blit(shadow, (base.x - 20, base.y - 22))
+    base = pygame.Rect(18 * TILE + 2, HUD + 8 * TILE + 2, 6 * TILE - 4, 6 * TILE - 4)
+    shadow = pygame.Surface((base.w + 34, base.h + 34), pygame.SRCALPHA)
+    pygame.draw.polygon(shadow, (0, 0, 0, 68), [(20, 23), (base.w + 29, 10), (base.w + 23, base.h + 24), (6, base.h + 29)])
+    screen.blit(shadow, (base.x - 14, base.y - 14))
 
-    left = pygame.Rect(base.x - 22, base.y + 38, 86, 140)
-    mid = pygame.Rect(base.x + 58, base.y + 12, 108, 168)
-    right = pygame.Rect(base.x + 160, base.y + 38, 86, 140)
+    cx = base.centerx
+    left = pygame.Rect(base.x + 4, base.y + 42, 58, 112)
+    mid = pygame.Rect(cx - 43, base.y + 14, 86, 142)
+    right = pygame.Rect(base.right - 62, base.y + 42, 58, 112)
 
     def brick_panel(rect):
         pygame.draw.rect(screen, (169, 73, 48), rect)
@@ -1339,15 +1356,15 @@ def draw_aerospace_building_overlay():
         pygame.draw.rect(screen, (238, 224, 188), (wing.x - 4, wing.y - 12, wing.w + 8, 13))
         pygame.draw.rect(screen, (189, 172, 138), (wing.x - 4, wing.y, wing.w + 8, 5))
         pygame.draw.rect(screen, (238, 224, 188), (wing.x - 2, wing.bottom - 18, wing.w + 4, 12))
-        window_grid(pygame.Rect(wing.x + 10, wing.y + 18, wing.w - 20, wing.h - 44), 3, 4)
-        gable = [(wing.centerx - 28, wing.y - 12), (wing.centerx, wing.y - 35), (wing.centerx + 28, wing.y - 12)]
+        window_grid(pygame.Rect(wing.x + 8, wing.y + 18, wing.w - 16, wing.h - 40), 2, 4)
+        gable = [(wing.centerx - 20, wing.y - 12), (wing.centerx, wing.y - 28), (wing.centerx + 20, wing.y - 12)]
         pygame.draw.polygon(screen, (185, 166, 128), [(x, y + 4) for x, y in gable])
         pygame.draw.polygon(screen, (246, 235, 204), gable)
         pygame.draw.line(screen, (136, 116, 88), gable[0], gable[1], 2)
         pygame.draw.line(screen, (136, 116, 88), gable[1], gable[2], 2)
 
     # Central glass hall and taller pediment.
-    pygame.draw.rect(screen, (226, 213, 180), (mid.x - 10, mid.y + 18, mid.w + 20, mid.h - 8))
+    pygame.draw.rect(screen, (226, 213, 180), (mid.x - 8, mid.y + 18, mid.w + 16, mid.h - 8))
     pygame.draw.rect(screen, (56, 101, 156), (mid.x + 7, mid.y + 36, mid.w - 14, mid.h - 48))
     for xx in range(mid.x + 16, mid.right - 12, 15):
         pygame.draw.line(screen, (22, 50, 90), (xx, mid.y + 38), (xx, mid.bottom - 14), 2)
@@ -1355,25 +1372,95 @@ def draw_aerospace_building_overlay():
         pygame.draw.line(screen, (129, 184, 235), (mid.x + 9, yy), (mid.right - 9, yy), 2)
     pygame.draw.rect(screen, (22, 49, 89), (mid.x + 7, mid.y + 36, mid.w - 14, mid.h - 48), 2)
 
-    roof = [(mid.x - 24, mid.y + 32), (mid.centerx, mid.y - 30), (mid.right + 24, mid.y + 32)]
+    roof = [(mid.x - 18, mid.y + 32), (mid.centerx, mid.y - 24), (mid.right + 18, mid.y + 32)]
     pygame.draw.polygon(screen, (169, 150, 113), [(x, y + 8) for x, y in roof])
     pygame.draw.polygon(screen, (248, 237, 205), roof)
     for step in range(5):
-        y = mid.y - 20 + step * 10
-        pygame.draw.line(screen, (198, 181, 145), (mid.x + 18 - step * 4, y), (mid.right - 18 + step * 4, y), 2)
+        y = mid.y - 14 + step * 9
+        pygame.draw.line(screen, (198, 181, 145), (mid.x + 18 - step * 3, y), (mid.right - 18 + step * 3, y), 2)
     pygame.draw.line(screen, (132, 111, 83), roof[0], roof[1], 3)
     pygame.draw.line(screen, (132, 111, 83), roof[1], roof[2], 3)
-    pygame.draw.rect(screen, (246, 235, 204), (mid.x - 18, mid.y + 22, mid.w + 36, 18))
-    pygame.draw.rect(screen, (184, 164, 126), (mid.x - 18, mid.y + 38, mid.w + 36, 5))
+    pygame.draw.rect(screen, (246, 235, 204), (mid.x - 13, mid.y + 22, mid.w + 26, 18))
+    pygame.draw.rect(screen, (184, 164, 126), (mid.x - 13, mid.y + 38, mid.w + 26, 5))
 
     # Entrance arch, inspired by the reference facade.
-    arch = pygame.Rect(mid.centerx - 31, mid.bottom - 62, 62, 62)
+    arch = pygame.Rect(mid.centerx - 25, mid.bottom - 55, 50, 55)
     pygame.draw.arc(screen, (244, 232, 199), arch, math.pi, 2 * math.pi, 8)
     pygame.draw.rect(screen, (244, 232, 199), (arch.x - 1, arch.centery, arch.w + 2, 42))
-    inner = pygame.Rect(mid.centerx - 22, mid.bottom - 48, 44, 48)
+    inner = pygame.Rect(mid.centerx - 18, mid.bottom - 43, 36, 43)
     pygame.draw.arc(screen, (44, 78, 124), inner, math.pi, 2 * math.pi, 4)
     pygame.draw.rect(screen, (30, 54, 92), (inner.x, inner.centery, inner.w, 28))
     pygame.draw.line(screen, (120, 179, 233), (inner.centerx, inner.y + 8), (inner.centerx, inner.bottom - 5), 2)
+
+
+def draw_swimming_pool_overlay():
+    if current_map_id != 1:
+        return
+
+    base = pygame.Rect(3 * TILE + 2, HUD + 2 * TILE + 2, 7 * TILE - 4, 3 * TILE - 4)
+    shadow = pygame.Surface((base.w + 40, base.h + 36), pygame.SRCALPHA)
+    pygame.draw.polygon(shadow, (0, 0, 0, 60), [(16, 24), (base.w + 34, 11), (base.w + 29, base.h + 29), (5, base.h + 33)])
+    screen.blit(shadow, (base.x - 15, base.y - 14))
+
+    brick = (145, 58, 48)
+    brick_light = (177, 74, 58)
+    roof = (232, 234, 226)
+    roof_shadow = (177, 181, 178)
+    trim = (228, 225, 211)
+    glass = (48, 89, 113)
+    glass_hi = (157, 210, 230)
+    dark = (31, 43, 50)
+
+    body = pygame.Rect(base.x + 1, base.y + 28, base.w - 2, base.h - 24)
+    pygame.draw.rect(screen, (96, 50, 45), body.move(0, 4))
+    pygame.draw.rect(screen, brick, body)
+    pygame.draw.rect(screen, brick_light, (body.x + 4, body.y + 5, body.w - 8, body.h - 11))
+
+    roof_rect = pygame.Rect(base.x - 10, base.y + 6, base.w + 20, 30)
+    pygame.draw.ellipse(screen, roof_shadow, roof_rect.move(0, 5))
+    pygame.draw.ellipse(screen, roof, roof_rect)
+    pygame.draw.rect(screen, roof, (roof_rect.x, roof_rect.centery - 1, roof_rect.w, roof_rect.h // 2 + 2))
+    for x in range(roof_rect.x + 15, roof_rect.right - 10, 18):
+        pygame.draw.line(screen, (197, 201, 199), (x, roof_rect.y + 3), (x + 5, roof_rect.bottom - 2), 1)
+    pygame.draw.line(screen, (255, 255, 248), (roof_rect.x + 10, roof_rect.y + 8), (roof_rect.right - 10, roof_rect.y + 8), 2)
+
+    pygame.draw.rect(screen, trim, (body.x + 10, body.y + 8, body.w - 20, 11))
+    for x in range(body.x + 20, body.right - 20, 25):
+        pygame.draw.rect(screen, (191, 188, 177), (x, body.y + 10, 6, 6))
+
+    hall = pygame.Rect(body.centerx - 45, body.y + 34, 90, body.h - 34)
+    pygame.draw.rect(screen, (218, 219, 207), hall.move(0, 3))
+    pygame.draw.rect(screen, trim, hall)
+    glass_box = pygame.Rect(hall.x + 12, hall.y + 9, hall.w - 24, hall.h - 13)
+    pygame.draw.rect(screen, glass, glass_box)
+    for gx in range(glass_box.x + 12, glass_box.right - 4, 13):
+        pygame.draw.line(screen, dark, (gx, glass_box.y), (gx, glass_box.bottom), 1)
+    for gy in range(glass_box.y + 12, glass_box.bottom - 2, 13):
+        pygame.draw.line(screen, glass_hi, (glass_box.x + 2, gy), (glass_box.right - 2, gy), 1)
+    pygame.draw.rect(screen, dark, glass_box, 2)
+    pygame.draw.rect(screen, dark, (hall.centerx - 8, hall.bottom - 22, 16, 22))
+    pygame.draw.line(screen, glass_hi, (hall.centerx, hall.bottom - 20), (hall.centerx, hall.bottom - 3), 1)
+
+    for wx in (body.x + 22, body.right - 54):
+        pygame.draw.rect(screen, glass, (wx, body.y + 38, 32, 13))
+        pygame.draw.line(screen, glass_hi, (wx + 3, body.y + 41), (wx + 29, body.y + 41), 1)
+        pygame.draw.rect(screen, dark, (wx, body.y + 38, 32, 13), 1)
+
+    sign = pygame.Rect(body.centerx - 48, body.y + 22, 96, 13)
+    pygame.draw.rect(screen, brick, sign)
+    center_text("佘明培游泳馆", sign.centerx, sign.centery, (244, 211, 150), FONT_MINI)
+
+    plaza = pygame.Rect(hall.x - 14, body.bottom - 2, hall.w + 28, 16)
+    pygame.draw.rect(screen, (201, 198, 185), plaza)
+    for i in range(4):
+        step = pygame.Rect(hall.centerx - 34 - i * 5, body.bottom - 6 + i * 4, 68 + i * 10, 4)
+        pygame.draw.rect(screen, (224, 222, 211), step)
+        pygame.draw.line(screen, (158, 161, 157), (step.x, step.bottom - 1), (step.right, step.bottom - 1), 1)
+    for tx in (base.x + 22, base.x + 54, base.right - 42, base.right - 18):
+        pygame.draw.rect(screen, (95, 72, 48), (tx - 2, body.bottom - 19, 4, 17))
+        pygame.draw.circle(screen, (67, 133, 71), (tx - 7, body.bottom - 23), 8)
+        pygame.draw.circle(screen, (92, 160, 78), (tx + 6, body.bottom - 23), 8)
+        pygame.draw.circle(screen, (55, 119, 64), (tx, body.bottom - 33), 7)
 
 
 
@@ -2180,6 +2267,8 @@ def draw_map():
                     or (29 <= x <= 31 and 14 <= y <= 16)
                 ):
                     draw_field_tile(r, x, y, "S") if y <= 7 else draw_road_tile(r, x, y)
+                elif current_map_id == 1 and 3 <= x <= 9 and 2 <= y <= 5:
+                    draw_field_tile(r, x, y, "S")
                 elif is_aerospace_building_tile(x, y):
                     draw_aerospace_building_tile(r, x, y)
                 else:
@@ -2207,6 +2296,7 @@ def draw_map():
     draw_jingfeng_canteen_overlay()
     draw_student_activity_center_overlay()
     draw_aerospace_building_overlay()
+    draw_swimming_pool_overlay()
     draw_furong_canteen_overlay()
     draw_pharmacy_school_overlay()
     draw_fengting_canteen_overlay()
