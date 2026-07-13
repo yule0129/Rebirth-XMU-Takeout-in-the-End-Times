@@ -727,11 +727,6 @@ def draw_pharmacy_school_overlay():
     pygame.draw.rect(screen, glass, (arch.x + 3, arch.y + 5, arch.w - 6, arch.h - 5))
     pygame.draw.line(screen, glass_hi, (arch.centerx, arch.y + 1), (arch.centerx, arch.bottom - 4), 1)
 
-    stone = pygame.Rect(base.x + 14, base.bottom - 20, 62, 20)
-    pygame.draw.ellipse(screen, (196, 190, 177), stone)
-    pygame.draw.line(screen, (230, 70, 58), (stone.x + 13, stone.y + 10), (stone.right - 12, stone.y + 7), 3)
-    pygame.draw.rect(screen, (81, 142, 75), (base.x + 88, base.bottom - 16, base.w - 110, 14))
-
 
 def draw_fengting_canteen_overlay():
     if current_map_id != 2:
@@ -840,64 +835,231 @@ def draw_express_center_overlay():
 
 
 def draw_duxing_dorm_overlay():
+    """笃行园区宿舍楼：灰石基座 + 红砖 + 白色横带 + 横长窗 + 顶层拱窗 + 红瓦坡顶白脊。
+       每个园区 = 对称双翼（4层）夹中间略低连接体（3层），只低一点点。"""
     if current_map_id != 2:
         return
 
-    def dorm(rect, cols, name, palette, people_seed):
-        wall, wall_light, roof, roof_dark, glass = palette
-        shadow = pygame.Surface((rect.w + 18, rect.h + 18), pygame.SRCALPHA)
-        pygame.draw.polygon(shadow, (0, 0, 0, 54), [(10, 15), (rect.w + 14, 8), (rect.w + 10, rect.h + 14), (4, rect.h + 16)])
-        screen.blit(shadow, (rect.x - 8, rect.y - 8))
-        pygame.draw.rect(screen, (137, 143, 143), rect.move(0, 4))
-        pygame.draw.rect(screen, wall, rect)
-        pygame.draw.rect(screen, wall_light, (rect.x + 5, rect.y + 10, rect.w - 10, rect.h - 18))
-        roof_pts = [(rect.x - 8, rect.y + 17), (rect.x + 12, rect.y + 3), (rect.right - 12, rect.y + 3), (rect.right + 8, rect.y + 17), (rect.right + 2, rect.y + 24), (rect.x - 2, rect.y + 24)]
-        pygame.draw.polygon(screen, roof_dark, [(x, y + 4) for x, y in roof_pts])
-        pygame.draw.polygon(screen, (245, 239, 222), roof_pts)
-        pygame.draw.polygon(screen, roof, [(rect.x + 10, rect.y + 13), (rect.right - 10, rect.y + 13), (rect.right - 18, rect.y + 20), (rect.x + 18, rect.y + 20)])
+    # ===== 调色板 =====
+    STONE = (140, 144, 141)
+    STONE_DARK = (110, 114, 111)
+    STONE_LINE = (122, 126, 123)
+    BRICK = (178, 84, 56)
+    BRICK_DARK = (142, 58, 40)
+    BRICK_HI = (202, 104, 74)
+    TRIM = (244, 239, 228)
+    TRIM_SHADOW = (194, 188, 174)
+    GLASS = (52, 90, 128)
+    GLASS_DARK = (24, 42, 60)
+    GLASS_HI = (152, 210, 230)
+    ROOF_TILE = (188, 64, 40)
+    ROOF_DARK = (136, 40, 26)
+    ROOF_RIDGE = (252, 248, 234)
+
+    def draw_section(rect, cols, num_floors, people_seed, has_entrance=True, show_name=False):
+        """绘制一个建筑段：阴影 → 石基座 → 红砖体 → 白横带+横长窗 → 拱窗顶 → 坡顶。"""
+
+        # ---- 阴影 ----
+        shadow = pygame.Surface((rect.w + 22, rect.h + 22), pygame.SRCALPHA)
+        pygame.draw.polygon(shadow, (0, 0, 0, 54),
+                           [(13, 17), (rect.w + 18, 11), (rect.w + 13, rect.h + 16), (5, rect.h + 18)])
+        screen.blit(shadow, (rect.x - 9, rect.y - 9))
+
+        base_h = 13
+
+        # ---- 灰色石墙基座 ----
+        stone_rect = pygame.Rect(rect.x - 2, rect.bottom - base_h, rect.w + 4, base_h + 2)
+        pygame.draw.rect(screen, STONE_DARK, stone_rect.move(0, 3))
+        pygame.draw.rect(screen, STONE, stone_rect)
+        pygame.draw.rect(screen, STONE_DARK, stone_rect, 1)
+        for sx in range(stone_rect.x + 6, stone_rect.right - 4, 16):
+            pygame.draw.line(screen, STONE_LINE, (sx, stone_rect.y + 3), (sx, stone_rect.bottom - 3), 1)
+
+        # ---- 红砖主体 ----
+        body_h = rect.h - base_h
+        body = pygame.Rect(rect.x, rect.y, rect.w, body_h)
+        pygame.draw.rect(screen, BRICK_DARK, body.move(0, 4))
+        pygame.draw.rect(screen, BRICK, body)
+        for yy in range(body.y + 6, body.bottom - 4, 7):
+            alpha = 48 if (yy // 7) % 2 == 0 else 32
+            shade = pygame.Surface((body.w - 8, 1), pygame.SRCALPHA)
+            shade.fill((*BRICK_HI, alpha))
+            screen.blit(shade, (body.x + 4, yy))
+
+        # ---- 白色横带 + 横长窗 + 顶层拱窗 ----
+        floor_h = (body_h - 14) // num_floors
+        band_positions = []
+        for f in range(num_floors + 1):
+            band_y = body.y + 6 + f * floor_h
+            band_positions.append(band_y)
+            pygame.draw.rect(screen, TRIM, (body.x, band_y, body.w, 5))
+            pygame.draw.line(screen, TRIM_SHADOW, (body.x, band_y + 5), (body.right, band_y + 5), 1)
+            pygame.draw.line(screen, (255, 254, 245), (body.x + 2, band_y + 1), (body.right - 2, band_y + 1), 1)
 
         window_positions = []
-        for row in range(3):
-            for col in range(cols):
-                wx = rect.x + 13 + col * ((rect.w - 26) // cols)
-                wy = rect.y + 32 + row * 23
-                ww = max(10, (rect.w - 38) // cols)
-                pygame.draw.rect(screen, glass, (wx, wy, ww, 12))
-                pygame.draw.line(screen, (167, 215, 232), (wx + 2, wy + 3), (wx + ww - 2, wy + 3), 1)
-                pygame.draw.rect(screen, (24, 55, 78), (wx, wy, ww, 12), 1)
-                window_positions.append((wx, wy, ww))
-        pygame.draw.rect(screen, (187, 194, 190), (rect.x, rect.bottom - 10, rect.w, 10))
-        pygame.draw.rect(screen, (46, 58, 65), (rect.centerx - 10, rect.bottom - 27, 20, 27))
-        pygame.draw.line(screen, (121, 167, 187), (rect.centerx, rect.bottom - 25), (rect.centerx, rect.bottom - 4), 1)
-        pulse_a = math.sin(time.time() * 7 + people_seed) * 3
-        for idx in (1, min(len(window_positions) - 2, 5), min(len(window_positions) - 1, 9)):
-            wx, wy, ww = window_positions[idx]
-            px, py = wx + ww // 2, wy + 14
-            pygame.draw.rect(screen, (255, 245, 210), (wx + 1, wy + 1, ww - 2, 10))
-            pygame.draw.circle(screen, (246, 195, 138), (px, py), 4)
-            pygame.draw.rect(screen, (231, 54, 62), (px - 4, py + 4, 8, 10))
-            pygame.draw.line(screen, (246, 195, 138), (px - 4, py + 7), (px - 13, py + int(pulse_a) - 2), 3)
-            pygame.draw.line(screen, (246, 195, 138), (px + 4, py + 7), (px + 13, py - int(pulse_a) - 2), 3)
-            pygame.draw.line(screen, (255, 244, 176), (px + 13, py - int(pulse_a) - 2), (px + 18, py - int(pulse_a) - 8), 2)
-        sos = pygame.Rect(rect.right - 34, rect.y + 30, 26, 13)
-        pygame.draw.rect(screen, (249, 241, 220), sos)
-        pygame.draw.rect(screen, (151, 42, 48), sos, 1)
-        center_text("SOS", sos.centerx, sos.centery, (207, 43, 51), FONT_MINI)
+        # 窗宽占满两白带之间，做出横长比例（宽 > 高）
+        col_w = max(13, (body.w - 16) // cols)
+        for f in range(num_floors):
+            band_y = band_positions[f]
+            next_band = band_positions[f + 1]
+            gap = next_band - band_y
+            wy = band_y + 6
+            wh = gap - 10
+            is_top = (f == num_floors - 1)  # 顶层 → 拱窗
 
-    dorm(
-        pygame.Rect(13 * TILE + 3, HUD + 10 * TILE + 2, 7 * TILE - 6, 3 * TILE + 6),
-        5,
-        "笃行园区",
-        ((185, 193, 185), (215, 221, 211), (184, 72, 50), (112, 48, 40), (53, 96, 124)),
-        0,
-    )
-    dorm(
-        pygame.Rect(21 * TILE + 3, HUD + 10 * TILE + 2, 7 * TILE - 6, 3 * TILE + 6),
-        5,
-        "笃行园区",
-        ((178, 186, 190), (211, 216, 216), (204, 83, 45), (124, 52, 38), (50, 91, 128)),
-        3,
-    )
+            for c in range(cols):
+                wx = body.x + 6 + c * col_w
+                ww = max(11, col_w - 4)
+
+                if is_top:
+                    # 顶层拱窗：下半矩形 + 上半椭圆弧
+                    # 矩形主体
+                    pygame.draw.rect(screen, GLASS, (wx, wy + 2, ww, wh - 2))
+                    # 拱形顶部（半椭圆）
+                    arch_top = pygame.Rect(wx, wy - 3, ww, 10)
+                    pygame.draw.ellipse(screen, GLASS, arch_top)
+                    # 高光
+                    pygame.draw.line(screen, GLASS_HI, (wx + 2, wy + 3), (wx + ww - 2, wy + 3), 1)
+                    # 窗框 — 矩形部分
+                    pygame.draw.rect(screen, GLASS_DARK, (wx, wy + 2, ww, wh - 2), 1)
+                    # 窗框 — 拱形部分
+                    pygame.draw.arc(screen, GLASS_DARK, arch_top, math.pi, 2 * math.pi, 1)
+                    # 拱顶竖框连接
+                    pygame.draw.line(screen, GLASS_DARK, (wx, wy + 2), (wx, wy), 1)
+                    pygame.draw.line(screen, GLASS_DARK, (wx + ww, wy + 2), (wx + ww, wy), 1)
+                else:
+                    # 普通横长窗
+                    pygame.draw.rect(screen, GLASS, (wx, wy, ww, wh))
+                    pygame.draw.line(screen, GLASS_HI, (wx + 2, wy + 2), (wx + ww - 2, wy + 2), 1)
+                    if ww > 16:
+                        pygame.draw.line(screen, GLASS_DARK, (wx + ww // 2, wy + 1),
+                                        (wx + ww // 2, wy + wh - 1), 1)
+                    pygame.draw.rect(screen, GLASS_DARK, (wx, wy, ww, wh), 1)
+
+                window_positions.append((wx, wy, ww, wh))
+
+        # ---- 一楼入口 ----
+        if has_entrance:
+            door_y = band_positions[0] + 6
+            door_h = band_positions[1] - band_positions[0] - 5
+            door_x = body.centerx - 12
+            door_w = 24
+            pygame.draw.rect(screen, (28, 34, 40), (door_x, door_y, door_w, door_h + 12))
+            pygame.draw.rect(screen, (46, 54, 62), (door_x, door_y, door_w, door_h + 12), 1)
+            pygame.draw.line(screen, (88, 116, 136), (door_x + door_w // 2, door_y + 2),
+                           (door_x + door_w // 2, door_y + door_h + 10), 1)
+            pygame.draw.rect(screen, TRIM, (door_x - 3, door_y - 3, door_w + 6, 4))
+            pygame.draw.line(screen, TRIM_SHADOW, (door_x - 3, door_y + 1),
+                           (door_x + door_w + 3, door_y + 1), 1)
+
+        # ---- 建筑名牌 ----
+        if show_name:
+            sign_w = min(80, body.w - 16)
+            sign = pygame.Rect(body.centerx - sign_w // 2, body.y + 3, sign_w, 10)
+            pygame.draw.rect(screen, (24, 30, 36), sign)
+            pygame.draw.rect(screen, TRIM, sign, 1)
+            center_text("笃行园区", sign.centerx, sign.centery, (244, 232, 182), FONT_MINI)
+
+        # ---- 红瓦坡顶 + 白脊 ----
+        roof_y = body.y
+        eave = [
+            (body.x - 9, roof_y + 13),
+            (body.centerx, roof_y - 10),
+            (body.right + 9, roof_y + 13),
+            (body.right + 2, roof_y + 20),
+            (body.x - 2, roof_y + 20),
+        ]
+        pygame.draw.polygon(screen, ROOF_DARK, [(x, y + 5) for x, y in eave])
+        pygame.draw.polygon(screen, (255, 251, 240), eave)
+        tile_surf = [
+            (body.x + 7, roof_y + 10),
+            (body.centerx, roof_y - 4),
+            (body.right - 7, roof_y + 10),
+            (body.right - 13, roof_y + 15),
+            (body.x + 13, roof_y + 15),
+        ]
+        pygame.draw.polygon(screen, ROOF_TILE, tile_surf)
+        for i in range(1, 4):
+            yy = roof_y + i * 4
+            prog = i / 4
+            x_pad = int(7 + prog * (body.w // 2 - 7))
+            pygame.draw.line(screen, (160, 50, 32), (body.x + x_pad, yy), (body.right - x_pad, yy), 1)
+        pygame.draw.line(screen, ROOF_RIDGE, (body.centerx, roof_y - 10), (body.centerx, roof_y - 4), 3)
+        for dx in (-1, 1):
+            pygame.draw.line(screen, ROOF_RIDGE, (body.centerx, roof_y - 10),
+                           (body.centerx + dx * 6, roof_y - 14), 2)
+
+        # ---- 救援学生 ----
+        pulse_a = math.sin(time.time() * 6 + people_seed) * 3
+        for idx in (cols + 1, min(len(window_positions) - 3, 2 * cols + cols // 2)):
+            if idx < len(window_positions):
+                wx, wy, ww, wh = window_positions[idx]
+                px, py = wx + ww // 2, wy + wh + 5
+                pygame.draw.rect(screen, (255, 244, 200), (wx + 1, wy + 1, ww - 2, wh - 1))
+                pygame.draw.circle(screen, (248, 198, 140), (px, py), 4)
+                pygame.draw.rect(screen, (226, 52, 58), (px - 4, py + 4, 8, 10))
+                pygame.draw.line(screen, (248, 198, 140), (px - 4, py + 7),
+                                (px - 13, py + int(pulse_a) - 2), 3)
+                pygame.draw.line(screen, (248, 198, 140), (px + 4, py + 7),
+                                (px + 13, py - int(pulse_a) - 2), 3)
+                pygame.draw.line(screen, (255, 244, 160), (px + 13, py - int(pulse_a) - 2),
+                                (px + 19, py - int(pulse_a) - 9), 2)
+
+        return body
+
+    # ============================================================
+    #  对称三段式：左 2 列(4层) + 中 3 列(3层) + 右 2 列(4层)
+    #  中间只低一层（~20px），形成微妙的高低错落
+    # ============================================================
+
+    def draw_one_complex(origin_col, people_seed):
+        ox = origin_col * TILE
+        oy = HUD + 10 * TILE
+        tall_h = 3 * TILE + 6               # 高层全高：102
+        mid_h = tall_h - TILE // 2 + 2      # 中层略低：88（只低 14px）
+        mid_y = oy + TILE // 3              # 中层略微下沉
+        wing_w = 2 * TILE - 4              # 翼宽：60
+        mid_w = 3 * TILE - 6               # 中宽：90
+
+        # 左翼（2 列，4 层）
+        left_body = draw_section(
+            pygame.Rect(ox + 3, oy + 2, wing_w, tall_h),
+            cols=2, num_floors=4, people_seed=people_seed,
+            has_entrance=True, show_name=True,
+        )
+        # 中间连接（3 列，3 层，只低一点点）
+        draw_section(
+            pygame.Rect(ox + wing_w + 1, mid_y, mid_w, mid_h),
+            cols=3, num_floors=3, people_seed=people_seed + 1,
+            has_entrance=False, show_name=False,
+        )
+        # 右翼（2 列，4 层，与左翼对称）
+        right_body = draw_section(
+            pygame.Rect(ox + wing_w + mid_w - 1, oy + 2, wing_w, tall_h),
+            cols=2, num_floors=4, people_seed=people_seed + 2,
+            has_entrance=True, show_name=False,
+        )
+
+        # 楼前绿化
+        for body, sd in [(left_body, 0), (right_body, 2)]:
+            for i, tx in enumerate([body.x + 10, body.x + body.w // 2, body.x + body.w - 14]):
+                trunk_h = 14 + (tile_seed(int(tx), people_seed + sd + i) % 8)
+                trunk_y = body.bottom + 17
+                pygame.draw.rect(screen, (88, 70, 44), (tx - 2, trunk_y - trunk_h, 4, trunk_h))
+                canopy_y = trunk_y - trunk_h
+                for layer, (cw, ch, color) in enumerate([
+                    (18, 14, (52, 122, 64)),
+                    (14, 12, (70, 148, 72)),
+                    (10, 10, (96, 168, 78)),
+                ]):
+                    cx_off = (i % 2) * 4 - 2
+                    pygame.draw.ellipse(screen, color,
+                                       (tx - cw // 2 + cx_off, canopy_y - ch + 4 - layer * 8, cw, ch))
+
+    # 左园区（列 13-19）
+    draw_one_complex(13, people_seed=0)
+    # 右园区（列 21-27）
+    draw_one_complex(21, people_seed=10)
 
 
 def draw_third_map_dorms_overlay():
