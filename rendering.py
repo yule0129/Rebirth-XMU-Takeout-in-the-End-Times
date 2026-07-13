@@ -159,7 +159,7 @@ def draw_field_tile(r, x, y, tile):
 
 # 判断某个障碍格是否属于航空航天学院建筑，用于替换成专门的建筑外观。
 def is_aerospace_building_tile(x, y):
-    return current_map_id == 1 and 16 <= x <= 22 and 8 <= y <= 14 and tile_at(x, y) == "B"
+    return current_map_id == 1 and 16 <= x <= 24 and 8 <= y <= 14 and tile_at(x, y) == "B"
 
 
 # ===== 重点建筑叠加绘制 =====
@@ -245,7 +245,7 @@ def draw_aerospace_building_overlay():
     if current_map_id != 1:
         return
 
-    base = pygame.Rect(18 * TILE + 2, HUD + 8 * TILE + 2, 6 * TILE - 4, 6 * TILE - 4)
+    base = pygame.Rect(18 * TILE + 2, HUD + 8 * TILE + 2, 7 * TILE - 4, 6 * TILE - 4)
     shadow = pygame.Surface((base.w + 34, base.h + 34), pygame.SRCALPHA)
     pygame.draw.polygon(shadow, (0, 0, 0, 68), [(20, 23), (base.w + 29, 10), (base.w + 23, base.h + 24), (6, base.h + 29)])
     screen.blit(shadow, (base.x - 14, base.y - 14))
