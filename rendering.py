@@ -1308,41 +1308,141 @@ def draw_dewang_library_overlay():
         pygame.draw.circle(screen, (64, 132, 66), (tx, base.bottom - 48), 7)
 
 def draw_fourth_map_side_buildings_overlay():
+    """第四张地图教学楼群：学武楼 / 坤銮楼 / 文宣楼 / 5号楼。
+       现代风格：奶油色墙面 + 大幅深蓝玻璃窗 + 灰石基座 + 红棕女儿墙 + 平屋顶。"""
     if current_map_id != 3:
         return
 
-    wall = (232, 235, 225)
-    side = (204, 214, 210)
-    roof = (199, 79, 45)
-    roof_dark = (126, 52, 40)
-    glass = (56, 103, 154)
-    glass_hi = (137, 188, 225)
+    # ===== 调色板 =====
+    WALL = (238, 236, 226)         # 奶油白
+    WALL_SHADOW = (204, 202, 192)  # 暗面
+    WALL_HI = (250, 249, 242)      # 高光
+    GLASS = (48, 86, 122)          # 深蓝玻璃
+    GLASS_DARK = (22, 42, 60)      # 窗框
+    GLASS_HI = (138, 198, 222)     # 玻璃反光
+    PARAPET = (182, 70, 46)        # 红棕女儿墙
+    PARAPET_DARK = (136, 46, 32)
+    PARAPET_HI = (210, 92, 60)
+    TRIM_SHADOW = (196, 194, 184)  # 楼层横线阴影
 
-    def building(rect, cols):
-        shadow = pygame.Surface((rect.w + 18, rect.h + 18), pygame.SRCALPHA)
-        pygame.draw.polygon(shadow, (0, 0, 0, 54), [(10, 16), (rect.w + 14, 8), (rect.w + 10, rect.h + 14), (4, rect.h + 16)])
+    def building(rect, num_floors, name, people_seed):
+        """绘制一栋现代教学楼。"""
+
+        # ---- 阴影 ----
+        shadow = pygame.Surface((rect.w + 20, rect.h + 20), pygame.SRCALPHA)
+        pygame.draw.polygon(shadow, (0, 0, 0, 55),
+                           [(12, 16), (rect.w + 16, 10), (rect.w + 12, rect.h + 15), (5, rect.h + 17)])
         screen.blit(shadow, (rect.x - 8, rect.y - 8))
-        pygame.draw.rect(screen, side, rect.move(0, 4))
-        pygame.draw.rect(screen, wall, rect)
-        pygame.draw.rect(screen, (218, 226, 222), (rect.x, rect.y + rect.h - 12, rect.w, 12))
-        pygame.draw.rect(screen, (246, 247, 238), (rect.x + 4, rect.y + 4, rect.w - 8, 8))
-        roof_pts = [(rect.x - 8, rect.y + 13), (rect.x + 8, rect.y + 2), (rect.right - 8, rect.y + 2), (rect.right + 8, rect.y + 13), (rect.right + 2, rect.y + 20), (rect.x - 2, rect.y + 20)]
-        pygame.draw.polygon(screen, roof_dark, [(x, y + 4) for x, y in roof_pts])
-        pygame.draw.polygon(screen, (252, 248, 232), roof_pts)
-        pygame.draw.polygon(screen, roof, [(rect.x + 8, rect.y + 10), (rect.right - 8, rect.y + 10), (rect.right - 15, rect.y + 16), (rect.x + 15, rect.y + 16)])
-        for col in range(cols):
-            for row in range(3):
-                wx = rect.x + 9 + col * ((rect.w - 18) // cols)
-                wy = rect.y + 26 + row * 19
-                ww = max(9, (rect.w - 24) // cols)
-                pygame.draw.rect(screen, glass, (wx, wy, ww, 10))
-                pygame.draw.line(screen, glass_hi, (wx + 2, wy + 2), (wx + ww - 2, wy + 2), 1)
-                pygame.draw.rect(screen, (29, 61, 96), (wx, wy, ww, 10), 1)
-        pygame.draw.line(screen, (192, 202, 198), (rect.x + 5, rect.y + 48), (rect.right - 5, rect.y + 48), 1)
 
-    building(pygame.Rect(22 * TILE, HUD + 10 * TILE, 4 * TILE, 5 * TILE), 3)
-    building(pygame.Rect(27 * TILE, HUD + 10 * TILE, 4 * TILE, 5 * TILE), 3)
+        # ---- 奶油色主体墙面（占满整个 rect，无基座） ----
+        body = pygame.Rect(rect.x, rect.y, rect.w, rect.h)
+        pygame.draw.rect(screen, WALL_SHADOW, body.move(0, 4))
+        pygame.draw.rect(screen, WALL, body)
 
+        # ---- 红棕女儿墙（顶部横带） ----
+        parapet_h = 10
+        parapet = pygame.Rect(body.x, body.y, body.w, parapet_h)
+        pygame.draw.rect(screen, PARAPET_DARK, parapet.move(0, 2))
+        pygame.draw.rect(screen, PARAPET, parapet)
+        pygame.draw.line(screen, PARAPET_HI, (parapet.x + 3, parapet.y + 2), (parapet.right - 3, parapet.y + 2), 1)
+        pygame.draw.line(screen, PARAPET_DARK, (parapet.x, parapet.bottom), (parapet.right, parapet.bottom), 2)
+
+        # ---- 底层底线（建筑与地面交界） ----
+        pygame.draw.line(screen, WALL_SHADOW, (body.x - 2, body.bottom - 1), (body.right + 2, body.bottom - 1), 2)
+
+        # ---- 楼层横线 + 对称窗户 ----
+        usable_h = body.h - parapet_h - 4
+        floor_h = usable_h // num_floors
+        cols = 3
+        margin_x = 10
+        gap_x = 6
+        total_win_w = body.w - 2 * margin_x - (cols - 1) * gap_x
+        ww = total_win_w // cols
+        actual_total = cols * ww + (cols - 1) * gap_x
+        start_x = body.x + (body.w - actual_total) // 2
+
+        ground_wy = 0
+
+        for f in range(num_floors):
+            floor_top = body.y + parapet_h + 2 + f * floor_h
+            line_y = floor_top
+            pygame.draw.line(screen, TRIM_SHADOW, (body.x + 4, line_y), (body.right - 4, line_y), 1)
+            pygame.draw.line(screen, WALL_HI, (body.x + 4, line_y + 1), (body.right - 4, line_y + 1), 1)
+
+            wy = floor_top + 4
+            wh = floor_h - 8
+            is_ground = (f == num_floors - 1)
+
+            if is_ground:
+                ground_wy = wy
+
+            for c in range(cols):
+                if is_ground and c == 1:
+                    continue  # 大门位置跳过窗户
+
+                wx = start_x + c * (ww + gap_x)
+                pygame.draw.rect(screen, GLASS, (wx, wy, ww, wh))
+                pygame.draw.line(screen, GLASS_HI, (wx + 2, wy + 2), (wx + ww - 3, wy + 2), 1)
+                if ww > 16:
+                    pygame.draw.line(screen, GLASS_DARK, (wx + ww // 2, wy + 1),
+                                    (wx + ww // 2, wy + wh - 1), 1)
+                pygame.draw.rect(screen, GLASS_DARK, (wx, wy, ww, wh), 1)
+
+        # ---- 一楼入口（底层中间，直通底部） ----
+        door_w = 26
+        door_x = body.centerx - door_w // 2
+        door_y = ground_wy
+        door_h = body.bottom - door_y - 2  # 大门直通建筑底部
+        pygame.draw.rect(screen, (28, 32, 38), (door_x, door_y, door_w, door_h))
+        pygame.draw.rect(screen, (46, 52, 60), (door_x, door_y, door_w, door_h), 1)
+        pygame.draw.line(screen, (80, 104, 124), (door_x + door_w // 2, door_y + 2),
+                        (door_x + door_w // 2, door_y + door_h - 2), 1)
+        # 门楣
+        pygame.draw.rect(screen, WALL_HI, (door_x - 3, door_y - 3, door_w + 6, 4))
+        pygame.draw.line(screen, TRIM_SHADOW, (door_x - 3, door_y + 1), (door_x + door_w + 3, door_y + 1), 1)
+
+        # ---- 建筑名牌（嵌在红棕女儿墙上） ----
+        sign_w = min(76, body.w - 20)
+        sign = pygame.Rect(body.centerx - sign_w // 2, body.y + 2, sign_w, 8)
+        pygame.draw.rect(screen, (24, 28, 34), sign)
+        pygame.draw.rect(screen, PARAPET_HI, sign, 1)
+        center_text(name, sign.centerx, sign.centery, (244, 232, 182), FONT_MINI)
+
+        return body
+
+    # ===== 四栋教学楼 =====
+    # 5号楼（列 1-4）
+    building(pygame.Rect(1 * TILE, HUD + 10 * TILE, 4 * TILE, 5 * TILE),
+             num_floors=5, name="5号楼", people_seed=0)
+    # 文宣楼（列 6-9）
+    building(pygame.Rect(6 * TILE, HUD + 10 * TILE, 4 * TILE, 5 * TILE),
+             num_floors=5, name="文宣楼", people_seed=4)
+    # 坤銮楼（列 22-25）
+    building(pygame.Rect(22 * TILE, HUD + 10 * TILE, 4 * TILE, 5 * TILE),
+             num_floors=5, name="坤銮楼", people_seed=8)
+    # 学武楼（列 27-30）
+    building(pygame.Rect(27 * TILE, HUD + 10 * TILE, 4 * TILE, 5 * TILE),
+             num_floors=5, name="学武楼", people_seed=12)
+
+    # ---- 楼前绿化 ----
+    for bx, sd in [(1 * TILE, 0), (6 * TILE, 4), (22 * TILE, 8), (27 * TILE, 12)]:
+        body_x = bx
+        body_w = 4 * TILE
+        body_bottom = HUD + 15 * TILE  # 基座底部
+        for i, tx in enumerate([body_x + 20, body_x + body_w - 24]):
+            trunk_h = 14 + (tile_seed(int(tx), sd + i) % 8)
+            trunk_y = body_bottom + 5
+            pygame.draw.rect(screen, (88, 70, 44), (tx - 2, trunk_y - trunk_h, 4, trunk_h))
+            canopy_y = trunk_y - trunk_h
+            for layer, (cw, ch, color) in enumerate([
+                (18, 14, (52, 122, 64)),
+                (14, 12, (70, 148, 72)),
+                (10, 10, (96, 168, 78)),
+            ]):
+                cx_off = (i % 2) * 4 - 2
+                pygame.draw.ellipse(screen, color,
+                                   (tx - cw // 2 + cx_off, canopy_y - ch + 4 - layer * 8, cw, ch))
+    
 # 单格建筑组件：给普通障碍物增加屋顶、窗户、阴影等像素细节。
 def draw_aerospace_building_tile(r, x, y):
     draw_field_tile(r, x, y, "S")
