@@ -1,8 +1,17 @@
-# rendering.py 负责所有“画到屏幕上”的内容。
+﻿# rendering.py 负责所有“画到屏幕上”的内容。
 # main.py 管游戏规则和状态，rendering.py 管地图、建筑、角色、天气、HUD 和结束界面的绘制。
 # 本文件通过 main.py 的 exec 加载，所以可以直接使用 screen、player、GAME_MAP 等全局变量。
 
 # 基础文字绘制函数：一个按左上角画，一个按中心点画。
+import math
+import time
+import pygame
+
+from assets import FONT, FONT_BOLD
+from config import HUD, TILE
+from maps import MAP_DATA
+
+
 def text(s, x, y, color=(255, 255, 255), f=None):
     img = (f or FONT).render(s, True, color)
     screen.blit(img, (x, y))
@@ -159,7 +168,7 @@ def draw_field_tile(r, x, y, tile):
 
 # 判断某个障碍格是否属于航空航天学院建筑，用于替换成专门的建筑外观。
 def is_aerospace_building_tile(x, y):
-    return current_map_id == 1 and 16 <= x <= 24 and 8 <= y <= 14 and tile_at(x, y) == "B"
+    return current_map_id == 1 and 17 <= x <= 24 and 8 <= y <= 13 and tile_at(x, y) == "B"
 
 
 # ===== 重点建筑叠加绘制 =====
@@ -245,78 +254,103 @@ def draw_aerospace_building_overlay():
     if current_map_id != 1:
         return
 
-    base = pygame.Rect(18 * TILE + 2, HUD + 8 * TILE + 2, 7 * TILE - 4, 6 * TILE - 4)
-    shadow = pygame.Surface((base.w + 34, base.h + 34), pygame.SRCALPHA)
-    pygame.draw.polygon(shadow, (0, 0, 0, 68), [(20, 23), (base.w + 29, 10), (base.w + 23, base.h + 24), (6, base.h + 29)])
-    screen.blit(shadow, (base.x - 14, base.y - 14))
+    # 固定覆盖航院 8x6 建筑区：x=17..24, y=8..13。用独立画布避免细节超出道路。
+    base = pygame.Rect(17 * TILE, HUD + 8 * TILE, 8 * TILE, 6 * TILE)
+    art = pygame.Surface((base.w, base.h), pygame.SRCALPHA)
 
-    cx = base.centerx
-    left = pygame.Rect(base.x + 4, base.y + 42, 58, 112)
-    mid = pygame.Rect(cx - 43, base.y + 14, 86, 142)
-    right = pygame.Rect(base.right - 62, base.y + 42, 58, 112)
+    brick = (176, 76, 50)
+    brick_dark = (116, 47, 38)
+    brick_line = (217, 115, 76)
+    cream = (238, 228, 194)
+    cream_shadow = (181, 166, 132)
+    glass = (34, 92, 154)
+    glass_dark = (17, 47, 87)
+    glass_light = (119, 187, 238)
+    roof = (239, 229, 199)
+    roof_shadow = (169, 151, 116)
 
-    def brick_panel(rect):
-        pygame.draw.rect(screen, (169, 73, 48), rect)
-        pygame.draw.rect(screen, (112, 45, 36), rect, 2)
-        for yy in range(rect.y + 9, rect.bottom - 3, 10):
-            pygame.draw.line(screen, (215, 117, 79), (rect.x + 5, yy), (rect.right - 5, yy), 1)
-        for xx in range(rect.x + 14, rect.right - 8, 28):
-            pygame.draw.rect(screen, (239, 225, 186), (xx - 3, rect.y + 2, 6, rect.h - 5))
+    # 不铺满矩形背景；画布保持透明，只绘制建筑物本身。
 
-    def window_grid(rect, cols, rows):
-        cell_w = rect.w // cols
-        cell_h = rect.h // rows
-        for row in range(rows):
-            for col in range(cols):
-                wx = rect.x + col * cell_w + 3
-                wy = rect.y + row * cell_h + 4
-                ww = max(7, cell_w - 6)
-                wh = max(7, cell_h - 8)
-                pygame.draw.rect(screen, (35, 78, 132), (wx, wy, ww, wh))
-                pygame.draw.line(screen, (116, 177, 235), (wx + 2, wy + 2), (wx + ww - 3, wy + 2), 1)
-                pygame.draw.rect(screen, (17, 45, 82), (wx, wy, ww, wh), 1)
+    # 三段式对称主体：左右翼楼 + 中央玻璃大厅。
+    left = pygame.Rect(4, 58, 82, 120)
+    mid = pygame.Rect(86, 34, 84, 144)
+    right = pygame.Rect(170, 58, 82, 120)
 
-    # Side wings with cream cornices and blue window grids.
-    for wing in (left, right):
-        brick_panel(wing)
-        pygame.draw.rect(screen, (238, 224, 188), (wing.x - 4, wing.y - 12, wing.w + 8, 13))
-        pygame.draw.rect(screen, (189, 172, 138), (wing.x - 4, wing.y, wing.w + 8, 5))
-        pygame.draw.rect(screen, (238, 224, 188), (wing.x - 2, wing.bottom - 18, wing.w + 4, 12))
-        window_grid(pygame.Rect(wing.x + 8, wing.y + 18, wing.w - 16, wing.h - 40), 2, 4)
-        gable = [(wing.centerx - 20, wing.y - 12), (wing.centerx, wing.y - 28), (wing.centerx + 20, wing.y - 12)]
-        pygame.draw.polygon(screen, (185, 166, 128), [(x, y + 4) for x, y in gable])
-        pygame.draw.polygon(screen, (246, 235, 204), gable)
-        pygame.draw.line(screen, (136, 116, 88), gable[0], gable[1], 2)
-        pygame.draw.line(screen, (136, 116, 88), gable[1], gable[2], 2)
+    def draw_wing(rect, mirror=False):
+        pygame.draw.rect(art, brick, rect)
+        pygame.draw.rect(art, brick_dark, rect, 2)
+        pygame.draw.rect(art, cream, (rect.x - 2, rect.y - 10, rect.w + 4, 12))
+        pygame.draw.rect(art, cream_shadow, (rect.x - 2, rect.y + 2, rect.w + 4, 4))
+        pygame.draw.rect(art, cream, (rect.x, rect.bottom - 16, rect.w, 11))
 
-    # Central glass hall and taller pediment.
-    pygame.draw.rect(screen, (226, 213, 180), (mid.x - 8, mid.y + 18, mid.w + 16, mid.h - 8))
-    pygame.draw.rect(screen, (56, 101, 156), (mid.x + 7, mid.y + 36, mid.w - 14, mid.h - 48))
-    for xx in range(mid.x + 16, mid.right - 12, 15):
-        pygame.draw.line(screen, (22, 50, 90), (xx, mid.y + 38), (xx, mid.bottom - 14), 2)
-    for yy in range(mid.y + 48, mid.bottom - 18, 16):
-        pygame.draw.line(screen, (129, 184, 235), (mid.x + 9, yy), (mid.right - 9, yy), 2)
-    pygame.draw.rect(screen, (22, 49, 89), (mid.x + 7, mid.y + 36, mid.w - 14, mid.h - 48), 2)
+        # 图中左右翼楼有成排蓝色窗格和竖向浅色柱。
+        for x in (rect.x + 7, rect.x + 33, rect.x + 59):
+            pygame.draw.rect(art, cream, (x, rect.y + 8, 6, rect.h - 25))
+            pygame.draw.rect(art, cream_shadow, (x + 5, rect.y + 9, 2, rect.h - 27))
+        for row in range(4):
+            wy = rect.y + 16 + row * 23
+            for col in range(3):
+                wx = rect.x + 12 + col * 23
+                if col == 1:
+                    wx += 2
+                pygame.draw.rect(art, glass, (wx, wy, 17, 13))
+                pygame.draw.line(art, glass_light, (wx + 2, wy + 3), (wx + 15, wy + 3), 1)
+                pygame.draw.rect(art, glass_dark, (wx, wy, 17, 13), 1)
 
-    roof = [(mid.x - 18, mid.y + 32), (mid.centerx, mid.y - 24), (mid.right + 18, mid.y + 32)]
-    pygame.draw.polygon(screen, (169, 150, 113), [(x, y + 8) for x, y in roof])
-    pygame.draw.polygon(screen, (248, 237, 205), roof)
-    for step in range(5):
-        y = mid.y - 14 + step * 9
-        pygame.draw.line(screen, (198, 181, 145), (mid.x + 18 - step * 3, y), (mid.right - 18 + step * 3, y), 2)
-    pygame.draw.line(screen, (132, 111, 83), roof[0], roof[1], 3)
-    pygame.draw.line(screen, (132, 111, 83), roof[1], roof[2], 3)
-    pygame.draw.rect(screen, (246, 235, 204), (mid.x - 13, mid.y + 22, mid.w + 26, 18))
-    pygame.draw.rect(screen, (184, 164, 126), (mid.x - 13, mid.y + 38, mid.w + 26, 5))
+        # 左右翼楼顶部的小三角山墙，保持对称。
+        gable = [(rect.centerx - 26, rect.y - 10), (rect.centerx, rect.y - 28), (rect.centerx + 26, rect.y - 10)]
+        pygame.draw.polygon(art, roof_shadow, [(x, y + 4) for x, y in gable])
+        pygame.draw.polygon(art, roof, gable)
+        pygame.draw.line(art, (129, 111, 86), gable[0], gable[1], 2)
+        pygame.draw.line(art, (129, 111, 86), gable[1], gable[2], 2)
+        for yy in range(gable[1][1] + 9, gable[0][1] - 2, 6):
+            pygame.draw.line(art, (192, 178, 145), (rect.centerx - 16, yy), (rect.centerx + 16, yy), 1)
 
-    # Entrance arch, inspired by the reference facade.
-    arch = pygame.Rect(mid.centerx - 25, mid.bottom - 55, 50, 55)
-    pygame.draw.arc(screen, (244, 232, 199), arch, math.pi, 2 * math.pi, 8)
-    pygame.draw.rect(screen, (244, 232, 199), (arch.x - 1, arch.centery, arch.w + 2, 42))
-    inner = pygame.Rect(mid.centerx - 18, mid.bottom - 43, 36, 43)
-    pygame.draw.arc(screen, (44, 78, 124), inner, math.pi, 2 * math.pi, 4)
-    pygame.draw.rect(screen, (30, 54, 92), (inner.x, inner.centery, inner.w, 28))
-    pygame.draw.line(screen, (120, 179, 233), (inner.centerx, inner.y + 8), (inner.centerx, inner.bottom - 5), 2)
+    draw_wing(left)
+    draw_wing(right, True)
+
+    # 中央高大厅：大面积蓝色玻璃 + 顶部大三角山墙。
+    pygame.draw.rect(art, cream_shadow, mid.move(0, 4))
+    pygame.draw.rect(art, cream, mid)
+    glass_rect = pygame.Rect(mid.x + 11, mid.y + 44, mid.w - 22, mid.h - 53)
+    pygame.draw.rect(art, glass, glass_rect)
+    for x in range(glass_rect.x + 10, glass_rect.right, 11):
+        pygame.draw.line(art, glass_dark, (x, glass_rect.y), (x, glass_rect.bottom), 1)
+    for y in range(glass_rect.y + 10, glass_rect.bottom, 12):
+        pygame.draw.line(art, glass_light, (glass_rect.x + 2, y), (glass_rect.right - 2, y), 1)
+    pygame.draw.rect(art, glass_dark, glass_rect, 2)
+
+    main_roof = [(mid.x - 15, mid.y + 35), (mid.centerx, mid.y - 24), (mid.right + 15, mid.y + 35)]
+    pygame.draw.polygon(art, roof_shadow, [(x, y + 7) for x, y in main_roof])
+    pygame.draw.polygon(art, roof, main_roof)
+    pygame.draw.line(art, (124, 105, 82), main_roof[0], main_roof[1], 3)
+    pygame.draw.line(art, (124, 105, 82), main_roof[1], main_roof[2], 3)
+    for step in range(7):
+        yy = mid.y - 12 + step * 8
+        x_pad = 22 - step * 2
+        pygame.draw.line(art, (190, 176, 143), (mid.x + x_pad, yy), (mid.right - x_pad, yy), 1)
+    pygame.draw.rect(art, cream, (mid.x - 12, mid.y + 31, mid.w + 24, 16))
+    pygame.draw.rect(art, cream_shadow, (mid.x - 12, mid.y + 45, mid.w + 24, 4))
+
+    # 圆形校徽位置和拱形正门，对应参考图中央门厅。
+    pygame.draw.circle(art, (218, 213, 196), (mid.centerx, mid.y + 50), 12)
+    pygame.draw.circle(art, (62, 99, 149), (mid.centerx, mid.y + 50), 8)
+    arch = pygame.Rect(mid.centerx - 27, mid.bottom - 58, 54, 55)
+    pygame.draw.arc(art, cream, arch, math.pi, 2 * math.pi, 8)
+    pygame.draw.rect(art, cream, (arch.x - 2, arch.centery, arch.w + 4, 35))
+    inner = pygame.Rect(mid.centerx - 19, mid.bottom - 44, 38, 41)
+    pygame.draw.arc(art, glass_dark, inner, math.pi, 2 * math.pi, 4)
+    pygame.draw.rect(art, glass, (inner.x, inner.centery, inner.w, 25))
+    pygame.draw.line(art, glass_light, (inner.centerx, inner.y + 9), (inner.centerx, inner.bottom - 4), 1)
+
+    # 前方低矮绿化只放在建筑画布底部，不伸出 8x6 范围。
+    for x in range(12, base.w - 10, 34):
+        pygame.draw.rect(art, (80, 83, 56), (x + 4, base.h - 23, 4, 18))
+        pygame.draw.circle(art, (58, 128, 61), (x, base.h - 23), 8)
+        pygame.draw.circle(art, (93, 168, 73), (x + 9, base.h - 25), 7)
+    pygame.draw.rect(art, (94, 84, 76), (mid.centerx - 16, base.h - 13, 32, 10))
+
+    screen.blit(art, base)
 
 
 def draw_swimming_pool_overlay():
@@ -408,22 +442,16 @@ def draw_siyuan_canteen_overlay():
     glass_hi = (134, 204, 219)
     dark = (31, 39, 45)
 
-    # 先铺满整块建筑底色，这样原本的黑色障碍物不会从角落露出来。
-    art.fill((150, 65, 54, 255))
-    pygame.draw.rect(art, (120, 53, 48), art.get_rect(), 2)
-    for y in range(8, base.h, 16):
-        pygame.draw.line(art, (174, 78, 60), (3, y), (base.w - 4, y), 1)
-    for x in range(8, base.w, 20):
-        pygame.draw.line(art, (119, 52, 47), (x, 44), (x, base.h - 4), 1)
+    # 不绘制整块矩形底色、外框和背景纹理，只保留餐厅建筑本体。
 
-    pygame.draw.ellipse(art, (0, 0, 0, 58), (10, 5, 108, 31))
-    body = pygame.Rect(10, 40, 108, 50)
+    pygame.draw.ellipse(art, (0, 0, 0, 58), (6, 3, 116, 34))
+    body = pygame.Rect(6, 38, 116, 53)
     pygame.draw.rect(art, (91, 40, 36), body.move(0, 4), border_radius=3)
     pygame.draw.rect(art, brick, body, border_radius=3)
     pygame.draw.rect(art, brick_light, (body.x + 4, body.y + 7, body.w - 8, body.h - 15), border_radius=2)
 
     # 白色环形外廊，压在屋顶下方，形成原图的圆弧栏杆。
-    balcony = pygame.Rect(4, 29, 120, 25)
+    balcony = pygame.Rect(1, 27, 126, 27)
     pygame.draw.ellipse(art, trim_shadow, balcony.move(0, 4))
     pygame.draw.ellipse(art, trim, balcony)
     pygame.draw.rect(art, trim, (balcony.x + 2, balcony.centery - 2, balcony.w - 4, 18))
@@ -432,31 +460,31 @@ def draw_siyuan_canteen_overlay():
         pygame.draw.line(art, (247, 247, 236), (x, balcony.centery), (x, balcony.bottom - 5), 2)
 
     # 青绿色大弧形屋顶，整体被裁剪在 3x4 格子内。
-    roof_rect = pygame.Rect(2, 7, 124, 41)
+    roof_rect = pygame.Rect(0, 5, 128, 44)
     pygame.draw.ellipse(art, roof_dark, roof_rect.move(0, 6))
     pygame.draw.ellipse(art, roof, roof_rect)
     pygame.draw.rect(art, roof, (roof_rect.x + 4, roof_rect.centery - 2, roof_rect.w - 8, roof_rect.h // 2 + 5))
     pygame.draw.arc(art, (238, 243, 226), roof_rect.inflate(-1, 1), math.pi * 0.04, math.pi * 0.96, 3)
     pygame.draw.arc(art, (20, 72, 75), roof_rect.inflate(-9, -9), math.pi * 0.05, math.pi * 0.95, 2)
-    for x in range(14, 116, 8):
+    for x in range(10, 120, 8):
         pygame.draw.line(art, roof_dark, (x, roof_rect.y + 10), (x + 8, roof_rect.bottom - 4), 1)
-    pygame.draw.line(art, roof_hi, (22, roof_rect.y + 11), (106, roof_rect.y + 11), 2)
+    pygame.draw.line(art, roof_hi, (18, roof_rect.y + 11), (110, roof_rect.y + 11), 2)
 
     # 屋顶后方红色设备房。
-    top_box = pygame.Rect(47, 2, 34, 12)
+    top_box = pygame.Rect(45, 1, 38, 13)
     pygame.draw.rect(art, (178, 73, 54), top_box)
     pygame.draw.rect(art, (226, 111, 78), (top_box.x + 3, top_box.y + 3, top_box.w - 6, 4))
     pygame.draw.rect(art, (103, 51, 45), top_box, 1)
 
     # 红砖柱和一层通廊。
-    for x in (15, 39, 66, 95):
-        pygame.draw.rect(art, (112, 55, 48), (x, body.y + 16, 9, body.h - 8))
-        pygame.draw.rect(art, (198, 95, 69), (x + 2, body.y + 19, 5, body.h - 14))
-        pygame.draw.rect(art, trim, (x - 2, body.y + 14, 13, 4))
+    for x in (12, 38, 68, 98):
+        pygame.draw.rect(art, (112, 55, 48), (x, body.y + 16, 10, body.h - 8))
+        pygame.draw.rect(art, (198, 95, 69), (x + 2, body.y + 19, 6, body.h - 14))
+        pygame.draw.rect(art, trim, (x - 2, body.y + 14, 14, 4))
     pygame.draw.rect(art, trim, (body.x + 5, body.y + 13, body.w - 10, 8))
 
     # 中央拱形玻璃门，是照片正面最明显的入口特征。
-    door_frame = pygame.Rect(45, 59, 38, 32)
+    door_frame = pygame.Rect(43, 58, 42, 34)
     pygame.draw.arc(art, trim, door_frame.inflate(8, 9), math.pi, 2 * math.pi, 6)
     pygame.draw.rect(art, trim, (door_frame.x - 4, door_frame.centery - 1, door_frame.w + 8, door_frame.h // 2 + 6))
     glass_box = pygame.Rect(door_frame.x + 6, door_frame.y + 9, door_frame.w - 12, door_frame.h - 10)
@@ -469,7 +497,7 @@ def draw_siyuan_canteen_overlay():
 
     # 小台阶也只画在建筑内部，不向右覆盖取餐道路。
     for i in range(3):
-        step = pygame.Rect(41 + i * 5, 88 + i * 3, 46 - i * 6, 3)
+        step = pygame.Rect(38 + i * 5, 89 + i * 3, 52 - i * 6, 3)
         pygame.draw.rect(art, (224, 222, 211), step)
         pygame.draw.line(art, (143, 151, 150), (step.x, step.bottom - 1), (step.right, step.bottom - 1), 1)
     center_text("思源", base.x + base.w // 2, base.y + 58, (255, 231, 169), FONT_MINI)
@@ -497,8 +525,7 @@ def draw_aiqiu_gym_overlay():
     plaza = (196, 196, 184)
     shadow = (28, 33, 36, 70)
 
-    art.fill((216, 220, 210, 255))
-    pygame.draw.rect(art, (171, 180, 174), art.get_rect(), 2)
+    # 保持画布透明，不画体育馆外围矩形边框。
 
     # 门前广场和中轴步道，限制在建筑图案内部，不影响地图可通行判断。
     pygame.draw.rect(art, plaza, (40, 136, 144, 52))
@@ -525,8 +552,13 @@ def draw_aiqiu_gym_overlay():
     for y in range(entrance.y + 9, entrance.bottom, 10):
         pygame.draw.line(art, glass_hi, (entrance.x + 2, y), (entrance.right - 2, y), 1)
     pygame.draw.rect(art, (37, 45, 48), entrance, 2)
-    label = FONT_MINI.render("爱秋体育馆", True, (101, 70, 54))
-    art.blit(label, label.get_rect(center=(112, 91)))
+
+    # 建筑名称直接嵌在正立面横匾中，不再使用地图上浮动的文字框。
+    name_plate = pygame.Rect(58, 84, 108, 18)
+    pygame.draw.rect(art, (246, 242, 225), name_plate)
+    pygame.draw.line(art, (171, 151, 119), name_plate.bottomleft, name_plate.bottomright, 1)
+    label = FONT_MINI.render("爱秋体育馆", True, (97, 61, 43))
+    art.blit(label, label.get_rect(center=(name_plate.centerx, name_plate.centery + 1)))
 
     # 白色低矮附属廊架，模拟照片前方两侧平台。
     for rect in (pygame.Rect(4, 127, 66, 44), pygame.Rect(154, 127, 66, 44)):
@@ -1151,6 +1183,9 @@ def draw_fourth_map_side_buildings_overlay():
 
 # 单格建筑组件：给普通障碍物增加屋顶、窗户、阴影等像素细节。
 def draw_aerospace_building_tile(r, x, y):
+    draw_field_tile(r, x, y, "S")
+    return
+
     above = is_aerospace_building_tile(x, y - 1)
     below = is_aerospace_building_tile(x, y + 1)
     left = is_aerospace_building_tile(x - 1, y)
@@ -1710,5 +1745,3 @@ def draw_transition_overlay():
     layer = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
     layer.fill((0, 0, 0, max(0, min(255, alpha))))
     screen.blit(layer, (0, 0))
-
-

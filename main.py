@@ -40,17 +40,17 @@ DORMS = list(DORM_NAMES.keys())
 ZOMBIE_PATROLS = MAP_DATA[current_map_id]["patrols"]
 
 COLORS = {
-    "R": (176, 176, 176),
-    "B": (9, 9, 9),
-    "L": (142, 212, 224),
-    "G": (255, 234, 34),
-    "D": (244, 32, 42),
-    "C": (145, 61, 174),
-    "P": (34, 179, 78),
-    "F": (232, 250, 218),
-    "K": (166, 101, 66),
-    "S": (34, 179, 78),
-    "H": (84, 111, 145),
+    "R": (176, 176, 176),#浅灰
+    "B": (9, 9, 9),#纯黑
+    "L": (142, 212, 224),#浅蓝
+    "G": (255, 234, 34),#黄色
+    "D": (244, 32, 42),#红色
+    "C": (145, 61, 174),#紫色
+    "P": (34, 179, 78),#绿色
+    "F": (232, 250, 218),#浅绿
+    "K": (166, 101, 66),#土黄色
+    "S": (34, 179, 78),#深绿
+    "H": (84, 111, 145),#灰蓝
 }
 
 # 极端天气对应的显示文字。天气不仅显示在 HUD，也会影响移动和视野。
@@ -126,7 +126,14 @@ def tile_center(pos):
 
 # 玩家状态字典保存位置、血量、动画状态、朝向、无敌时间等。
 # 用字典是为了初学阶段更容易直接看到每个字段的意义。
-player = {"x": tile_center(START_TILE)[0], "y": tile_center(START_TILE)[1], "hp": 3, "state": "idle", "state_started": time.time(), "moving": False, "flip": False, "locked_until": 0.0, "invulnerable_until": 0.0}
+player = {"x": tile_center(START_TILE)[0],
+           "y": tile_center(START_TILE)[1], 
+           "hp": 3, "state": "idle",
+            "state_started": time.time(),
+            "moving": False, 
+            "flip": False, 
+            "locked_until": 0.0, 
+            "invulnerable_until": 0.0}
 zombies = []
 
 
@@ -135,7 +142,14 @@ def rebuild_zombies():
     zombies.clear()
     for patrol in ZOMBIE_PATROLS:
         x, y = tile_center(patrol[0])
-        zombies.append({"x": x, "y": y, "patrol": patrol, "target": 1, "chasing": False, "flip": False, "frame_offset": random.random() * 10})
+        zombies.append({"x": x, 
+                        "y": y, 
+                        "patrol": patrol, 
+                        "target": 1, 
+                        "chasing": False, 
+                        "flip": False, 
+                        "frame_offset": random.random() * 10
+                        })
 
 
 rebuild_zombies()
@@ -154,10 +168,12 @@ def switch_map(map_id, spawn_tile):
 
 # 当任务目标不在当前地图时，找到最近的连接口，用来画导航线。
 def nearest_connection_to(target_map_id):
+    # 筛选：当前地图所有能跳转到目标地图的传送门
     options = [(tile, data) for tile, data in CONNECTIONS.get(current_map_id, {}).items() if data[0] == target_map_id]
     if not options:
         return None
     px, py = player["x"], player["y"]
+    # 按玩家到传送门中心点距离排序，取最近一个传送格子
     return min(options, key=lambda item: dist((px, py), tile_center(item[0])))[0]
 
 
@@ -177,7 +193,11 @@ def target_tile_for_guide():
 def start_transition(target_map, spawn_tile):
     if transition["active"]:
         return
-    transition.update({"active": True, "started": time.time(), "target_map": target_map, "spawn": spawn_tile, "switched": False})
+    transition.update({"active": True, 
+                       "started": time.time(), 
+                       "target_map": target_map, 
+                       "spawn": spawn_tile, 
+                       "switched": False})
     set_message(f"\u6b63\u5728\u524d\u5f80 {map_name(target_map)}...", 2)
 
 
@@ -485,7 +505,7 @@ def check_state():
 # 加载绘制模块。
 # rendering.py 中的绘制函数会直接使用 main.py 里的 screen、player、zombies 等变量。
 # 这样可以把“画面绘制”和“游戏逻辑”拆开，同时避免给每个绘制函数传很多参数。
-exec((Path(__file__).resolve().parent / "rendering.py").read_text(encoding="utf-8"), globals())
+exec((Path(__file__).resolve().parent / "rendering.py").read_text(encoding="utf-8-sig"), globals())
 
 
 # 重开游戏：清空分数和订单，恢复血量，回到第一张地图出生点。

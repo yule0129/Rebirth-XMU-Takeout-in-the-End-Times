@@ -114,14 +114,14 @@ MAP_ONE_PATROLS = [
 def build_map_two():
     dorm_names = {
         (11, 4): "佘明培游泳馆",
+        (6, 13): "爱秋体育馆",
         (25, 10): "\u822a\u7a7a\u822a\u5929\u5b66\u9662",
     }
     pickup_names = {
         (11, 15): "\u601d\u6e90\u9910\u5385\u53d6\u9910\u70b9",
     }
     labels = {
-        (6, 4): "佘明培游泳馆",
-        (8, 10): "\u7231\u79cb\u4f53\u80b2\u9986",
+        #(6, 4): "佘明培游泳馆",
         (11, 15): "\u601d\u6e90\u9910\u5385",
         (20, 11): "\u822a\u7a7a\u822a\u5929\u5b66\u9662",
         (26, 2): "\u8299\u84c9\u6e56",
@@ -150,21 +150,21 @@ def build_map_two():
     rect(1, 0, 11, 1, "L")
     rect(14, 0, 23, 3, "L")
     rect(25, 0, 31, 3, "L")
-    rect(26, 5, 31, 16, "L")  # 25
+    rect(26, 6, 31, 16, "L")  # 右湖
     rect(1, 2, 11, 5, "S")
     rect(1, 7, 11, 8, "S")
     rect(1, 11, 11, 12, "S")
     rect(1, 14, 5, 16, "S")
-    rect(14, 5, 23, 6, "S")  # 23
+    rect(14, 6, 23, 7, "S")  # 上草坪
     rect(14, 7, 15, 14, "S")
     rect(14, 15, 23, 16, "S")
-    rect(17, 7, 24, 14, "R")
-    rect(17, 8, 24, 13, "B")  # 18
+    rect(17, 9, 24, 13, "B")  # 航院
 
-    rect(3, 3, 9, 5, "B")
-    rect(3, 7, 9, 12, "B")
-    rect(6, 14, 9, 17, "B")
-    rect(18, 8, 23, 13, "B")
+    rect(3, 3, 9, 5, "B")  # 游泳馆
+    rect(4, 9, 8, 12, "B")  # 体育馆
+    
+    rect(5, 8, 7, 10, "B")  # 体育馆
+    rect(7, 15, 8, 16, "B")  # 思源餐厅
 
     hroad(4, 10, 31)
     hroad(6, 0, 13)
@@ -176,10 +176,6 @@ def build_map_two():
     vroad(12, 0, 17)
     vroad(13, 0, 17)
     vroad(24, 0, 4)  # 17
-
-    hroad(7, 16, 24)  # 17
-    hroad(14, 16, 24) # 17
-    vroad(16, 7, 14)  # 17
 
     for pos in dorm_names:
         set_tile(*pos, "D")
@@ -392,7 +388,7 @@ def build_map_four():
 
 MAP_FOUR_GRID, MAP_FOUR_DORM_NAMES, MAP_FOUR_PICKUP_NAMES, MAP_FOUR_LABELS, MAP_FOUR_PATROLS = build_map_four()
 
-# 地图编号到中文名称的对应关系，用于 HUD 和切换地图时的提示。
+# 地图编号到中文名称的对应关系，用于 HUD 和切换地图时的提示  (需修改)
 MAP_NAMES = {0: "\u672c\u90e8\u4e3b\u6821\u533a", 1: "\u6e56\u7554\u6821\u533a", 2: "\u4e30\u5ead\u836f\u5b66\u533a", 3: "\u5fb7\u65fa\u8299\u84c9\u533a"}
 
 # MAP_DATA 是游戏读取地图的总入口：每张图都有格子、点位、标签和丧尸巡逻路线。
@@ -453,4 +449,3 @@ CONNECTIONS = {
         (24, 0): (1, (30, 4)),
     },
 }
-
