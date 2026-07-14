@@ -59,9 +59,27 @@ def tile_seed(x, y):
     return (x * 37 + y * 53 + 17) % 100
 
 
+HORROR_GREEN = (82, 255, 134)
+HORROR_GREEN_DARK = (16, 81, 55)
+HORROR_RED = (232, 43, 47)
+HORROR_INK = (9, 16, 16)
+HORROR_MAP_IDS = {0, 1, 2, 3}
+
+
 # ===== 基础地形绘制 =====
 # 下面几个函数负责道路、操场、足球场、篮球场、草地和湖面的像素风表现。
 def draw_road_tile(r, x, y):
+    if current_map_id in HORROR_MAP_IDS:
+        base = (42, 53, 49) if (x + y) % 2 else (47, 58, 54)
+        pygame.draw.rect(screen, base, r)
+        pygame.draw.rect(screen, (18, 26, 25), r, 1)
+        if tile_seed(x, y) % 2 == 0:
+            pygame.draw.rect(screen, (66, 78, 71), (r.x + 4, r.y + 6, 12, 3))
+        if tile_seed(x, y) % 3 == 0:
+            pygame.draw.rect(screen, (24, 35, 31), (r.x + 18, r.y + 21, 10, 2))
+        if tile_seed(x, y) % 7 == 0:
+            pygame.draw.rect(screen, (36, 130, 76), (r.x + 8, r.y + 25, 15, 2))
+        return
     pygame.draw.rect(screen, (172, 171, 166), r)
     pygame.draw.rect(screen, (135, 136, 132), r, 1)
     if tile_seed(x, y) % 3 == 0:
@@ -73,6 +91,20 @@ def draw_road_tile(r, x, y):
 def draw_track_playground_tile(r, x, y):
     rel_x = x - 18
     rel_y = y - 1
+    if current_map_id == 0:
+        pygame.draw.rect(screen, (63, 35, 35), r)
+        pygame.draw.rect(screen, (24, 20, 20), r, 1)
+        if 2 <= rel_x <= 10 and 1 <= rel_y <= 5:
+            stripe = (23, 81, 55) if (rel_y + rel_x // 2) % 2 == 0 else (30, 103, 66)
+            pygame.draw.rect(screen, stripe, r.inflate(-2, -2))
+            if tile_seed(x, y) % 4 == 0:
+                pygame.draw.rect(screen, (70, 255, 128), (r.x + 6, r.y + 8, 12, 2))
+        else:
+            for offset in (7, 15, 23):
+                pygame.draw.line(screen, (123, 65, 58), (r.x + 2, r.y + offset), (r.right - 2, r.y + offset), 1)
+        if rel_x == 9 and rel_y == 4:
+            pygame.draw.rect(screen, (157, 205, 176), (r.x + 5, r.y + 9, 21, 13), 2)
+        return
     pygame.draw.rect(screen, (201, 49, 42), r)
     pygame.draw.rect(screen, (165, 32, 34), r, 1)
 
@@ -105,6 +137,15 @@ def draw_track_playground_tile(r, x, y):
 def draw_soccer_field_tile(r, x, y):
     rel_x = x - 14
     rel_y = y - 1
+    if current_map_id == 0:
+        stripe = (32, 83, 55) if rel_x % 2 == 0 else (25, 69, 50)
+        pygame.draw.rect(screen, stripe, r)
+        pygame.draw.rect(screen, (12, 31, 28), r, 1)
+        if rel_y in {0, 4} or rel_x in {0, 2}:
+            pygame.draw.line(screen, (134, 196, 154), (r.x + 3, r.centery), (r.right - 3, r.centery), 1)
+        if rel_x == 1 and rel_y == 2:
+            pygame.draw.circle(screen, (134, 196, 154), r.center, 9, 1)
+        return
     stripe = (211, 244, 196) if rel_x % 2 == 0 else (226, 250, 211)
     pygame.draw.rect(screen, stripe, r)
     pygame.draw.line(screen, (190, 232, 176), (r.x + 4, r.y + 7), (r.right - 4, r.y + 7), 1)
@@ -127,6 +168,21 @@ def draw_basketball_court_tile(r, x, y):
     base_x = 18 if left_court else 25
     rel_x = x - base_x
     rel_y = y - 9
+    if current_map_id == 0:
+        pygame.draw.rect(screen, (87, 57, 47), r)
+        pygame.draw.rect(screen, (33, 24, 23), r, 1)
+        for yy in (8, 20):
+            pygame.draw.line(screen, (122, 85, 67), (r.x + 4, r.y + yy), (r.right - 4, r.y + yy), 1)
+        line = (151, 197, 157)
+        if rel_y in {0, 3}:
+            pygame.draw.line(screen, line, (r.x + 3, r.centery), (r.right - 3, r.centery), 1)
+        if rel_x in {0, 5}:
+            pygame.draw.line(screen, line, (r.centerx, r.y + 3), (r.centerx, r.bottom - 3), 1)
+        if rel_x in {0, 5} and rel_y in {1, 2}:
+            hoop_x = r.x + 7 if rel_x == 0 else r.right - 7
+            pygame.draw.rect(screen, (22, 25, 23), (hoop_x - 3, r.centery - 8, 6, 16))
+            pygame.draw.circle(screen, HORROR_RED, (hoop_x, r.centery), 5, 2)
+        return
     pygame.draw.rect(screen, (181, 116, 66), r)
     pygame.draw.rect(screen, (165, 96, 54), r, 1)
     for yy in (8, 20):
@@ -159,6 +215,27 @@ def draw_field_tile(r, x, y, tile):
     if current_map_id == 0 and tile == "K" and ((17 <= x <= 23 and 9 <= y <= 12) or (25 <= x <= 30 and 9 <= y <= 12)):
         draw_basketball_court_tile(r, x, y)
         return
+    if current_map_id in HORROR_MAP_IDS:
+        palettes = {
+            "S": ((24, 73, 49), (48, 122, 66)),
+            "P": ((27, 83, 54), (62, 139, 76)),
+            "F": ((31, 86, 57), (94, 151, 91)),
+            "K": ((83, 57, 47), (134, 76, 58)),
+        }
+        base, detail = palettes.get(tile, ((24, 73, 49), (48, 122, 66)))
+        pygame.draw.rect(screen, base, r)
+        pygame.draw.rect(screen, (10, 26, 24), r, 1)
+        if tile in {"S", "P", "F"}:
+            for i in range(2):
+                ox = (tile_seed(x + i, y) * 7) % 22 + 4
+                oy = (tile_seed(x, y + i) * 5) % 20 + 6
+                pygame.draw.line(screen, detail, (r.x + ox, r.y + oy), (r.x + ox + 3, r.y + oy - 5), 2)
+            if tile_seed(x, y) % 6 == 0:
+                pygame.draw.rect(screen, HORROR_GREEN, (r.x + 6, r.y + 24, 14, 2))
+        else:
+            pygame.draw.line(screen, detail, (r.x + 4, r.y + 9), (r.right - 4, r.y + 9), 1)
+            pygame.draw.line(screen, (38, 28, 27), (r.x + 4, r.y + 21), (r.right - 4, r.y + 21), 1)
+        return
     base = COLORS.get(tile, (80, 180, 90))
     pygame.draw.rect(screen, base, r)
     if tile == "S":
@@ -188,28 +265,29 @@ def draw_jingfeng_canteen_overlay():
     screen.blit(shadow, (base.x - 12, base.y - 12))
 
     body = pygame.Rect(base.x - 8, base.y + 8, base.w + 26, base.h + 38)
-    pygame.draw.rect(screen, (181, 89, 57), body)
-    pygame.draw.rect(screen, (113, 49, 38), body, 2)
+    pygame.draw.rect(screen, (76, 70, 62), body)
+    pygame.draw.rect(screen, HORROR_INK, body, 2)
     for yy in range(body.y + 8, body.bottom - 4, 9):
-        pygame.draw.line(screen, (218, 125, 84), (body.x + 5, yy), (body.right - 6, yy), 1)
+        pygame.draw.line(screen, (112, 103, 88), (body.x + 5, yy), (body.right - 6, yy), 1)
 
     glass = pygame.Rect(body.x + 44, body.y + 12, body.w - 58, body.h - 20)
-    pygame.draw.rect(screen, (192, 213, 205), glass)
+    pygame.draw.rect(screen, (20, 84, 54), glass)
     for gx in range(glass.x + 8, glass.right - 5, 15):
-        pygame.draw.line(screen, (86, 112, 123), (gx, glass.y + 2), (gx, glass.bottom - 2), 1)
+        pygame.draw.line(screen, (8, 34, 29), (gx, glass.y + 2), (gx, glass.bottom - 2), 1)
     for gy in range(glass.y + 10, glass.bottom - 2, 13):
-        pygame.draw.line(screen, (239, 246, 234), (glass.x + 2, gy), (glass.right - 2, gy), 2)
-    pygame.draw.rect(screen, (68, 92, 103), glass, 2)
+        pygame.draw.line(screen, HORROR_GREEN, (glass.x + 2, gy), (glass.right - 2, gy), 2)
+    pygame.draw.rect(screen, HORROR_GREEN_DARK, glass, 2)
 
     roof = [(body.x - 6, body.y - 8), (body.right + 8, body.y - 8), (body.right, body.y + 8), (body.x - 14, body.y + 8)]
     pygame.draw.polygon(screen, (81, 78, 70), [(x, y + 6) for x, y in roof])
-    pygame.draw.polygon(screen, (226, 217, 184), roof)
-    pygame.draw.line(screen, (120, 108, 86), roof[0], roof[1], 2)
+    pygame.draw.polygon(screen, (107, 110, 96), roof)
+    pygame.draw.line(screen, (18, 23, 22), roof[0], roof[1], 2)
 
     door = pygame.Rect(body.x + 17, body.bottom - 28, 21, 28)
-    pygame.draw.rect(screen, (32, 41, 49), door)
-    pygame.draw.line(screen, (109, 150, 174), (door.centerx, door.y + 3), (door.centerx, door.bottom - 3), 1)
-    pygame.draw.rect(screen, (228, 218, 179), (body.x + 8, body.y + 15, 24, 7))
+    pygame.draw.rect(screen, (8, 14, 15), door)
+    pygame.draw.line(screen, HORROR_GREEN, (door.centerx, door.y + 3), (door.centerx, door.bottom - 3), 1)
+    pygame.draw.rect(screen, (25, 30, 27), (body.x + 8, body.y + 15, 24, 7))
+    pygame.draw.rect(screen, HORROR_RED, (body.x + 10, body.y + 16, 20, 4))
 
 
 def draw_student_activity_center_overlay():
@@ -226,33 +304,33 @@ def draw_student_activity_center_overlay():
     bridge = pygame.Rect(base.x + 38, base.y + 28, 128, 30)
 
     for rect in (left, right):
-        pygame.draw.rect(screen, (190, 199, 196), rect)
-        pygame.draw.rect(screen, (116, 128, 130), rect, 2)
-        pygame.draw.rect(screen, (70, 112, 143), (rect.x + 8, rect.y + 15, rect.w - 16, 22))
+        pygame.draw.rect(screen, (75, 87, 82), rect)
+        pygame.draw.rect(screen, (17, 25, 24), rect, 2)
+        pygame.draw.rect(screen, (18, 91, 58), (rect.x + 8, rect.y + 15, rect.w - 16, 22))
         for gx in range(rect.x + 17, rect.right - 12, 22):
-            pygame.draw.line(screen, (38, 70, 96), (gx, rect.y + 15), (gx, rect.y + 37), 1)
-        pygame.draw.line(screen, (218, 235, 238), (rect.x + 10, rect.y + 19), (rect.right - 12, rect.y + 19), 2)
-        pygame.draw.rect(screen, (132, 145, 145), (rect.x, rect.bottom - 12, rect.w, 12))
+            pygame.draw.line(screen, (8, 34, 30), (gx, rect.y + 15), (gx, rect.y + 37), 1)
+        pygame.draw.line(screen, HORROR_GREEN, (rect.x + 10, rect.y + 19), (rect.right - 12, rect.y + 19), 2)
+        pygame.draw.rect(screen, (40, 51, 48), (rect.x, rect.bottom - 12, rect.w, 12))
 
-    pygame.draw.rect(screen, (172, 178, 174), bridge)
-    pygame.draw.rect(screen, (70, 112, 143), (bridge.x + 8, bridge.y + 6, bridge.w - 16, 15))
-    pygame.draw.rect(screen, (82, 93, 96), bridge, 2)
+    pygame.draw.rect(screen, (58, 69, 65), bridge)
+    pygame.draw.rect(screen, (19, 90, 58), (bridge.x + 8, bridge.y + 6, bridge.w - 16, 15))
+    pygame.draw.rect(screen, (15, 22, 22), bridge, 2)
 
-    pygame.draw.rect(screen, (212, 216, 205), tower)
-    pygame.draw.rect(screen, (136, 145, 143), tower, 2)
-    pygame.draw.polygon(screen, (232, 235, 225), [(tower.x - 6, tower.y + 20), (tower.centerx, tower.y - 16), (tower.right + 8, tower.y + 20)])
-    pygame.draw.line(screen, (150, 148, 136), (tower.x - 6, tower.y + 20), (tower.centerx, tower.y - 16), 2)
-    pygame.draw.line(screen, (150, 148, 136), (tower.centerx, tower.y - 16), (tower.right + 8, tower.y + 20), 2)
-    pygame.draw.rect(screen, (73, 112, 143), (tower.x + 13, tower.y + 38, 28, 48))
+    pygame.draw.rect(screen, (86, 94, 85), tower)
+    pygame.draw.rect(screen, (17, 25, 24), tower, 2)
+    pygame.draw.polygon(screen, (118, 123, 105), [(tower.x - 6, tower.y + 20), (tower.centerx, tower.y - 16), (tower.right + 8, tower.y + 20)])
+    pygame.draw.line(screen, (22, 29, 27), (tower.x - 6, tower.y + 20), (tower.centerx, tower.y - 16), 2)
+    pygame.draw.line(screen, (22, 29, 27), (tower.centerx, tower.y - 16), (tower.right + 8, tower.y + 20), 2)
+    pygame.draw.rect(screen, (19, 91, 58), (tower.x + 13, tower.y + 38, 28, 48))
     for gy in range(tower.y + 48, tower.y + 84, 12):
-        pygame.draw.line(screen, (203, 231, 237), (tower.x + 15, gy), (tower.x + 39, gy), 1)
-    pygame.draw.rect(screen, (57, 78, 92), (tower.x + 13, tower.y + 38, 28, 48), 2)
+        pygame.draw.line(screen, HORROR_GREEN, (tower.x + 15, gy), (tower.x + 39, gy), 1)
+    pygame.draw.rect(screen, HORROR_GREEN_DARK, (tower.x + 13, tower.y + 38, 28, 48), 2)
 
     for tx in (base.x + 20, base.x + 304):
         pygame.draw.rect(screen, (96, 72, 48), (tx, base.bottom - 20, 5, 20))
         for ox, oy in [(-10, -7), (-4, -13), (6, -12), (12, -5)]:
-            pygame.draw.circle(screen, (57, 143, 64), (tx + ox, base.bottom - 22 + oy), 9)
-            pygame.draw.circle(screen, (116, 194, 76), (tx + ox + 2, base.bottom - 25 + oy), 5)
+            pygame.draw.circle(screen, (19, 62, 37), (tx + ox, base.bottom - 22 + oy), 9)
+            pygame.draw.circle(screen, (38, 112, 61), (tx + ox + 2, base.bottom - 25 + oy), 5)
 
 
 def draw_aerospace_building_overlay():
@@ -1523,6 +1601,14 @@ def draw_rescue_student(x, y, phase):
 
 
 def draw_dorm_window(r, wx, wy, lit, rescue=False, phase=0):
+    if current_map_id in HORROR_MAP_IDS:
+        glass = HORROR_GREEN if lit else (23, 59, 49)
+        pygame.draw.rect(screen, glass, (wx, wy, 8, 8))
+        pygame.draw.line(screen, (167, 255, 181) if lit else (55, 95, 79), (wx + 2, wy + 2), (wx + 6, wy + 2), 1)
+        pygame.draw.rect(screen, (8, 22, 19), (wx, wy, 8, 8), 1)
+        if rescue:
+            draw_rescue_student(wx + 4, wy + 4, phase)
+        return
     glass = (245, 206, 112) if lit else (76, 104, 122)
     pygame.draw.rect(screen, glass, (wx, wy, 8, 8))
     pygame.draw.line(screen, (255, 239, 168) if lit else (121, 153, 166), (wx + 2, wy + 2), (wx + 6, wy + 2), 1)
@@ -1536,6 +1622,9 @@ def draw_fourth_map_building_tile(r, x, y):
     below = tile_at(x, y + 1) == "B"
     left = tile_at(x - 1, y) == "B"
     right = tile_at(x + 1, y) == "B"
+    if current_map_id in HORROR_MAP_IDS:
+        draw_horror_building_tile(r, x, y, above, below, left, right)
+        return
     wall = (232, 235, 225)
     wall_light = (248, 248, 239)
     wall_side = (204, 214, 210)
@@ -1581,11 +1670,75 @@ def draw_campus_building_tile(r, x, y):
     if current_map_id == 3:
         draw_fourth_map_building_tile(r, x, y)
         return
+    if current_map_id in HORROR_MAP_IDS:
+        draw_horror_building_tile(r, x, y, above, below, left, right)
+        return
     if current_map_id != 0:
         pygame.draw.rect(screen, (82, 88, 92), r)
         pygame.draw.rect(screen, (118, 124, 125), (r.x + 3, r.y + 5, r.w - 6, r.h - 8))
         pygame.draw.rect(screen, (45, 48, 50), r, 1)
         return
+
+
+def draw_horror_building_tile(r, x, y, above, below, left, right):
+        district = (x // 6 + y // 4) % 4
+        palettes = [
+            ((56, 61, 55), (84, 91, 80), (26, 34, 31), (8, 13, 14), (144, 151, 124)),
+            ((63, 55, 52), (89, 80, 72), (50, 43, 39), (14, 17, 17), (126, 126, 105)),
+            ((61, 66, 58), (96, 100, 84), (47, 36, 34), (12, 15, 16), (149, 142, 113)),
+            ((45, 56, 53), (72, 84, 76), (31, 41, 37), (8, 15, 15), (118, 134, 111)),
+        ]
+        wall, wall_light, roof, roof_dark, trim = palettes[district]
+
+        pygame.draw.rect(screen, (6, 10, 11), r.move(2, 2))
+        pygame.draw.rect(screen, wall, r)
+        pygame.draw.rect(screen, wall_light, (r.x + 3, r.y + 5, r.w - 6, r.h - 8))
+
+        if not above:
+            if district == 1:
+                pygame.draw.rect(screen, roof_dark, (r.x - (0 if left else 3), r.y + 5, r.w + (0 if left else 3) + (0 if right else 3), 10))
+                pygame.draw.rect(screen, roof, (r.x - (0 if left else 3), r.y + 2, r.w + (0 if left else 3) + (0 if right else 3), 10))
+                pygame.draw.line(screen, (98, 116, 92), (r.x + 4, r.y + 8), (r.right - 4, r.y + 8), 2)
+            else:
+                roof_poly = [(r.x - (0 if left else 5), r.y + 11), (r.centerx, r.y + 1), (r.right + (0 if right else 5), r.y + 11), (r.right, r.y + 19), (r.x, r.y + 19)]
+                pygame.draw.polygon(screen, roof_dark, [(px, py + 3) for px, py in roof_poly])
+                pygame.draw.polygon(screen, roof, roof_poly)
+                pygame.draw.line(screen, (92, 110, 91), (r.x + 4, r.y + 13), (r.right - 4, r.y + 13), 1)
+        elif tile_seed(x, y) % 5 == 0:
+            pygame.draw.rect(screen, (34, 45, 40), (r.x + 4, r.y + 4, r.w - 8, 6))
+
+        if not left:
+            pygame.draw.line(screen, (10, 18, 18), (r.x, r.y + 7), (r.x, r.bottom), 2)
+        if not right:
+            pygame.draw.line(screen, (7, 13, 14), (r.right - 1, r.y + 7), (r.right - 1, r.bottom), 2)
+        if district in {1, 3} and left and right:
+            pygame.draw.rect(screen, (42, 49, 43), (r.x + 2, r.y + 17, r.w - 4, 3))
+            pygame.draw.rect(screen, (42, 49, 43), (r.x + 2, r.y + 28, r.w - 4, 3))
+
+        if above and below:
+            lit = tile_seed(x, y) % 4 != 0
+            rescue = tile_seed(x, y) in {7, 21, 45, 62, 84, 98}
+            draw_dorm_window(r, r.x + 6, r.y + 8, lit, rescue, tile_seed(x, y))
+            draw_dorm_window(r, r.x + 19, r.y + 8, tile_seed(x, y) % 3 == 0, False, tile_seed(x, y) + 1)
+        elif not below:
+            pygame.draw.rect(screen, (21, 25, 23), (r.x, r.bottom - 5, r.w, 5))
+            if tile_seed(x, y) % 4 == 0:
+                pygame.draw.rect(screen, (9, 15, 16), (r.x + 10, r.y + 8, 12, 20))
+                pygame.draw.rect(screen, trim, (r.x + 12, r.y + 10, 8, 4))
+            else:
+                draw_dorm_window(r, r.x + 6, r.y + 9, True, tile_seed(x, y) % 13 == 0, tile_seed(x, y))
+                draw_dorm_window(r, r.x + 19, r.y + 9, tile_seed(x, y) % 2 == 0, False, tile_seed(x, y) + 2)
+
+        if tile_seed(x, y) % 11 == 0:
+            pygame.draw.line(screen, (89, 42, 37), (r.x + 7, r.y + 18), (r.x + 17, r.y + 28), 1)
+        pygame.draw.rect(screen, (5, 9, 10), r, 1)
+        return
+
+def draw_unused_daytime_campus_building_tile(r, x, y):
+    above = tile_at(x, y - 1) == "B"
+    below = tile_at(x, y + 1) == "B"
+    left = tile_at(x - 1, y) == "B"
+    right = tile_at(x + 1, y) == "B"
     district = (x // 6 + y // 4) % 4
     palettes = [
         ((128, 89, 68), (161, 119, 86), (128, 45, 43), (82, 32, 36), (230, 188, 121)),
@@ -1645,11 +1798,88 @@ def draw_campus_building_tile(r, x, y):
 
 # 湖面格子的水波纹绘制。
 def draw_lake_tile(r, x, y):
+    if current_map_id in HORROR_MAP_IDS:
+        pygame.draw.rect(screen, (18, 70, 67), r)
+        pygame.draw.rect(screen, (8, 25, 29), r, 1)
+        wave = (74, 255, 143)
+        offset = (tile_seed(x, y) % 8) - 4
+        pygame.draw.arc(screen, wave, (r.x + 3 + offset, r.y + 8, r.w - 10, 11), 0, math.pi, 2)
+        pygame.draw.arc(screen, (23, 119, 87), (r.x + 4 - offset, r.y + 21, r.w - 8, 9), 0, math.pi, 2)
+        return
     pygame.draw.rect(screen, COLORS["L"], r)
     wave = (218, 246, 249)
     offset = (tile_seed(x, y) % 8) - 4
     pygame.draw.arc(screen, wave, (r.x + 3 + offset, r.y + 8, r.w - 10, 11), 0, math.pi, 2)
     pygame.draw.arc(screen, (89, 174, 196), (r.x + 4 - offset, r.y + 21, r.w - 8, 9), 0, math.pi, 2)
+
+
+def draw_first_map_horror_atmosphere():
+    elapsed = time.time()
+    mist = pygame.Surface((WIDTH, HEIGHT - HUD), pygame.SRCALPHA)
+    for i in range(9):
+        band_y = int((i * 67 + elapsed * (11 + i % 3 * 5)) % (HEIGHT - HUD + 80)) - 48
+        alpha = 24 + (i % 3) * 8
+        color = (24, 178, 86, alpha)
+        pygame.draw.ellipse(mist, color, (i * 119 - 90, band_y, 310, 44))
+        pygame.draw.ellipse(mist, (6, 28, 24, alpha + 10), (i * 127 - 130, band_y + 22, 280, 30))
+    screen.blit(mist, (0, HUD))
+
+    vignette = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+    pygame.draw.rect(vignette, (0, 0, 0, 50), (0, HUD, WIDTH, HEIGHT - HUD))
+    pygame.draw.rect(vignette, (0, 0, 0, 82), (0, HUD, WIDTH, 18))
+    pygame.draw.rect(vignette, (0, 0, 0, 94), (0, HEIGHT - 52, WIDTH, 52))
+    pygame.draw.rect(vignette, (0, 0, 0, 76), (0, HUD, 40, HEIGHT - HUD))
+    pygame.draw.rect(vignette, (0, 0, 0, 76), (WIDTH - 40, HUD, 40, HEIGHT - HUD))
+    if int(elapsed * 2) % 5 == 0:
+        pygame.draw.rect(vignette, (80, 255, 133, 22), (0, HUD + 6, WIDTH, 3))
+    screen.blit(vignette, (0, 0))
+
+
+def apply_horror_building_filter(rect, strength=124, green=50):
+    overlay = pygame.Surface((rect.w, rect.h), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, strength))
+    pygame.draw.rect(overlay, (15, 70, 45, green), overlay.get_rect())
+    pygame.draw.rect(overlay, (0, 0, 0, 82), overlay.get_rect(), 2)
+    screen.blit(overlay, rect)
+
+    scan_y = rect.y + 9 + (tile_seed(rect.x // TILE, rect.y // TILE) % max(8, rect.h - 16))
+    pygame.draw.line(screen, (79, 255, 132), (rect.x + 6, scan_y), (rect.right - 6, scan_y), 1)
+    if rect.w > 70:
+        for x in range(rect.x + 18, rect.right - 10, 36):
+            pygame.draw.rect(screen, (38, 228, 101), (x, rect.y + 20, 11, 5))
+
+
+def draw_horror_filters_for_special_buildings():
+    if current_map_id == 1:
+        rects = [
+            pygame.Rect(3 * TILE, HUD + 2 * TILE, 7 * TILE, 4 * TILE),
+            pygame.Rect(3 * TILE, HUD + 7 * TILE, 7 * TILE, 6 * TILE),
+            pygame.Rect(6 * TILE, HUD + 14 * TILE, 4 * TILE, 3 * TILE),
+            pygame.Rect(17 * TILE, HUD + 8 * TILE, 8 * TILE, 6 * TILE),
+        ]
+    elif current_map_id == 2:
+        rects = [
+            pygame.Rect(1 * TILE, HUD + 1 * TILE, 12 * TILE, 7 * TILE),
+            pygame.Rect(1 * TILE, HUD + 9 * TILE, 12 * TILE, 8 * TILE),
+            pygame.Rect(14 * TILE, HUD + 2 * TILE, 4 * TILE, 5 * TILE),
+            pygame.Rect(13 * TILE, HUD + 10 * TILE, 15 * TILE, 7 * TILE),
+            pygame.Rect(22 * TILE, HUD + 1 * TILE, 7 * TILE, 5 * TILE),
+            pygame.Rect(28 * TILE, HUD + 10 * TILE, 4 * TILE, 7 * TILE),
+        ]
+    elif current_map_id == 3:
+        rects = [
+            pygame.Rect(1 * TILE, HUD + 3 * TILE, 5 * TILE, 3 * TILE),
+            pygame.Rect(11 * TILE, HUD + 9 * TILE, 10 * TILE, 5 * TILE),
+            pygame.Rect(0 * TILE, HUD + 8 * TILE, 11 * TILE, 8 * TILE),
+            pygame.Rect(22 * TILE, HUD + 8 * TILE, 10 * TILE, 8 * TILE),
+        ]
+    else:
+        return
+
+    for rect in rects:
+        clipped = rect.clip(screen.get_rect())
+        if clipped.w > 0 and clipped.h > 0:
+            apply_horror_building_filter(clipped)
 
 
 # 根据当前地图和格子类型，把整张地图逐格绘制出来。
@@ -1686,15 +1916,15 @@ def draw_map():
             elif tile == "L":
                 draw_lake_tile(r, x, y)
             elif tile == "G":
-                pygame.draw.rect(screen, COLORS["R"], r)
+                draw_road_tile(r, x, y)
                 pygame.draw.circle(screen, (255, 244, 120), r.center, 12)
                 pygame.draw.circle(screen, (117, 91, 16), r.center, 12, 2)
             elif tile == "C":
-                pygame.draw.rect(screen, COLORS["R"], r)
+                draw_road_tile(r, x, y)
                 pygame.draw.rect(screen, (145, 61, 174), r.inflate(-4, -4), border_radius=3)
                 pygame.draw.rect(screen, (223, 170, 244), r.inflate(-10, -10), border_radius=2)
             elif tile == "D":
-                pygame.draw.rect(screen, COLORS["R"], r)
+                draw_road_tile(r, x, y)
                 pygame.draw.rect(screen, (244, 68, 72), r.inflate(-10, -8), border_radius=5)
                 pygame.draw.rect(screen, (104, 18, 22), r.inflate(-10, -8), 2, border_radius=5)
             else:
@@ -1715,6 +1945,9 @@ def draw_map():
     draw_third_map_dorms_overlay()
     draw_dewang_library_overlay()
     draw_fourth_map_side_buildings_overlay()
+    draw_horror_filters_for_special_buildings()
+    if current_map_id in HORROR_MAP_IDS:
+        draw_first_map_horror_atmosphere()
 
 
 
