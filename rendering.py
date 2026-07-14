@@ -1882,6 +1882,103 @@ def draw_horror_filters_for_special_buildings():
             apply_horror_building_filter(clipped)
 
 
+def lake_components():
+    seen = set()
+    components = []
+    for y, row in enumerate(GAME_MAP):
+        for x, tile in enumerate(row):
+            if tile != "L" or (x, y) in seen:
+                continue
+            stack = [(x, y)]
+            seen.add((x, y))
+            component = []
+            while stack:
+                px, py = stack.pop()
+                component.append((px, py))
+                for nx, ny in ((px + 1, py), (px - 1, py), (px, py + 1), (px, py - 1)):
+                    if (
+                        0 <= ny < len(GAME_MAP)
+                        and 0 <= nx < len(GAME_MAP[ny])
+                        and GAME_MAP[ny][nx] == "L"
+                        and (nx, ny) not in seen
+                    ):
+                        seen.add((nx, ny))
+                        stack.append((nx, ny))
+            components.append(component)
+    return components
+
+
+def draw_mutant_swan(cx, cy, phase, flip=False, scale=1.0):
+    wobble = math.sin(phase * 4) * 2
+    direction = -1 if flip else 1
+    shadow_w = int(34 * scale)
+    shadow_h = int(10 * scale)
+    pygame.draw.ellipse(screen, (4, 18, 16, 120), (cx - shadow_w // 2, cy + 9, shadow_w, shadow_h))
+
+    body = pygame.Rect(0, 0, int(34 * scale), int(16 * scale))
+    body.center = (cx, cy + 4 + wobble)
+    pygame.draw.ellipse(screen, (22, 31, 29), body.inflate(4, 4))
+    pygame.draw.ellipse(screen, (118, 135, 118), body)
+    pygame.draw.ellipse(screen, (69, 83, 78), body.inflate(-8, -6))
+
+    wing_pts = [
+        (cx - direction * int(2 * scale), cy + int(1 * scale) + wobble),
+        (cx - direction * int(13 * scale), cy - int(13 * scale) + wobble),
+        (cx + direction * int(5 * scale), cy - int(5 * scale) + wobble),
+        (cx + direction * int(13 * scale), cy + int(4 * scale) + wobble),
+    ]
+    pygame.draw.polygon(screen, (154, 166, 148), wing_pts)
+    pygame.draw.line(screen, (42, 54, 51), wing_pts[1], wing_pts[3], 2)
+
+    neck_base = (cx + direction * int(13 * scale), cy - int(1 * scale) + wobble)
+    neck_mid = (cx + direction * int(20 * scale), cy - int(18 * scale) + wobble)
+    head = (cx + direction * int(29 * scale), cy - int(18 * scale) + wobble)
+    pygame.draw.line(screen, (21, 29, 29), neck_base, neck_mid, int(7 * scale))
+    pygame.draw.line(screen, (129, 143, 128), neck_base, neck_mid, int(5 * scale))
+    pygame.draw.line(screen, (21, 29, 29), neck_mid, head, int(7 * scale))
+    pygame.draw.line(screen, (129, 143, 128), neck_mid, head, int(5 * scale))
+    pygame.draw.circle(screen, (132, 143, 128), head, int(6 * scale))
+    pygame.draw.circle(screen, HORROR_RED, (head[0] + direction * int(2 * scale), head[1] - int(1 * scale)), max(2, int(2 * scale)))
+    pygame.draw.polygon(
+        screen,
+        (44, 12, 13),
+        [
+            (head[0] + direction * int(5 * scale), head[1]),
+            (head[0] + direction * int(14 * scale), head[1] + int(3 * scale)),
+            (head[0] + direction * int(5 * scale), head[1] + int(5 * scale)),
+        ],
+    )
+
+    for i in range(3):
+        tx = cx - direction * int((11 + i * 8) * scale)
+        ty = cy + int((1 + i % 2 * 4) * scale) + wobble
+        pygame.draw.line(screen, HORROR_GREEN, (tx, ty), (tx - direction * int(11 * scale), ty + int(4 * scale)), 2)
+    pygame.draw.arc(screen, (76, 255, 133), (cx - 22, cy + 8, 44, 16), 0, math.pi, 1)
+
+
+def draw_mutant_swans():
+    components = [component for component in lake_components() if len(component) >= 8]
+    if current_map_id == 1 and components:
+        components = [max(components, key=lambda component: sum(x for x, _ in component) / len(component))]
+    now = time.time()
+    for index, component in enumerate(components[:4]):
+        centers = [(x * TILE + TILE // 2, HUD + y * TILE + TILE // 2) for x, y in component]
+        avg_x = sum(x for x, _ in centers) / len(centers)
+        avg_y = sum(y for _, y in centers) / len(centers)
+        path = sorted(centers, key=lambda item: math.atan2(item[1] - avg_y, item[0] - avg_x))
+        if len(path) < 2:
+            continue
+        travel = (now * (0.55 + index * 0.08) + index * 7.0) % len(path)
+        i = int(travel)
+        frac = travel - i
+        x1, y1 = path[i]
+        x2, y2 = path[(i + 1) % len(path)]
+        cx = int(x1 + (x2 - x1) * frac)
+        cy = int(y1 + (y2 - y1) * frac)
+        flip = x2 < x1
+        draw_mutant_swan(cx, cy, now + index * 1.7, flip=flip, scale=0.82 if len(component) < 18 else 1.0)
+
+
 # 根据当前地图和格子类型，把整张地图逐格绘制出来。
 # 绘制顺序是：先画基础地形，再画重点建筑叠加层。
 def draw_map():
@@ -1946,6 +2043,7 @@ def draw_map():
     draw_dewang_library_overlay()
     draw_fourth_map_side_buildings_overlay()
     draw_horror_filters_for_special_buildings()
+    draw_mutant_swans()
     if current_map_id in HORROR_MAP_IDS:
         draw_first_map_horror_atmosphere()
 
