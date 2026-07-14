@@ -35,16 +35,23 @@ def draw_area_labels():
     for (gx, gy), label in labels.items():
         cx = gx * TILE + TILE // 2
         cy = HUD + gy * TILE + TILE // 2
-        img = FONT_BOLD.render(label, True, (238, 52, 57))
-        pad_x, pad_y = 10, 5
+        img = FONT_BOLD.render(label, True, (236, 64, 68))
+        shadow = FONT_BOLD.render(label, True, (17, 22, 19))
+        pad_x, pad_y = 11, 6
         rect = img.get_rect(center=(cx, cy))
         rect.x = max(6, min(WIDTH - rect.w - 6, rect.x))
         rect.y = max(HUD + 6, min(HEIGHT - rect.h - 6, rect.y))
         bg = rect.inflate(pad_x * 2, pad_y * 2)
         shade = pygame.Surface((bg.w, bg.h), pygame.SRCALPHA)
-        shade.fill((0, 0, 0, 112))
+        shade.fill((6, 10, 10, 198))
+        pygame.draw.rect(shade, (27, 8, 10, 118), (0, shade.get_height() - 8, shade.get_width(), 8))
         screen.blit(shade, bg)
-        pygame.draw.rect(screen, (255, 255, 255, 42), bg, 1)
+        pygame.draw.rect(screen, (22, 31, 27), bg, 2)
+        pygame.draw.line(screen, (69, 255, 132), (bg.x + 4, bg.y), (bg.right - 4, bg.y), 1)
+        pygame.draw.line(screen, (112, 18, 22), (bg.x + 4, bg.bottom - 1), (bg.right - 4, bg.bottom - 1), 1)
+        pygame.draw.rect(screen, (111, 17, 22), (bg.x + 4, bg.y + 4, 5, 5))
+        pygame.draw.rect(screen, (69, 255, 132), (bg.right - 9, bg.y + 4, 5, 5))
+        screen.blit(shadow, (rect.x + 1, rect.y + 1))
         screen.blit(img, rect)
 
 
@@ -2366,6 +2373,21 @@ def draw_transition_overlay():
         alpha = 255
     else:
         alpha = int(255 * max(0, 1 - (elapsed - 0.36) / 0.22))
+    layer = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+    layer.fill((0, 0, 0, max(0, min(255, alpha))))
+    screen.blit(layer, (0, 0))
+
+
+def draw_start_flash_overlay():
+    if not start_flash["active"]:
+        return
+    elapsed = time.time() - start_flash["started"]
+    if elapsed < 0.08:
+        alpha = int(255 * (elapsed / 0.08))
+    elif elapsed < 0.22:
+        alpha = 255
+    else:
+        alpha = int(255 * max(0, 1 - (elapsed - 0.22) / 0.14))
     layer = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
     layer.fill((0, 0, 0, max(0, min(255, alpha))))
     screen.blit(layer, (0, 0))

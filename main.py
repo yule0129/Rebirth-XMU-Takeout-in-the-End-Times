@@ -535,6 +535,7 @@ def reset_game():
 
 
 show_start_screen = True
+start_flash = {"active": False, "started": 0.0, "switched": False}
 
 # ===== 主循环 =====
 # 每一帧依次处理输入、更新游戏状态、绘制画面，直到玩家关闭窗口。
@@ -548,8 +549,7 @@ while running:
         elif event.type == pygame.KEYDOWN:
             if show_start_screen:
                 if event.key in (pygame.K_SPACE, pygame.K_RETURN, pygame.K_e):
-                    show_start_screen = False
-                    reset_game()
+                    start_flash.update({"active": True, "started": time.time(), "switched": False})
                 elif event.key == pygame.K_ESCAPE:
                     running = False
                 continue
@@ -565,15 +565,23 @@ while running:
                 pressed_keys.discard(event.key)
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if show_start_screen and event.button == 1:
-                show_start_screen = False
-                reset_game()
+                start_flash.update({"active": True, "started": time.time(), "switched": False})
         elif event.type == pygame.WINDOWFOCUSLOST:
             if not show_start_screen:
                 pressed_keys.clear()
 
+    if start_flash["active"]:
+        elapsed = time.time() - start_flash["started"]
+        if elapsed >= 0.18 and not start_flash["switched"]:
+            show_start_screen = False
+            reset_game()
+            start_flash["switched"] = True
+        if elapsed >= 0.36:
+            start_flash["active"] = False
+
     if show_start_screen:
         draw_start_screen()
-    elif not game_over:
+    elif not game_over and not start_flash["active"]:
         update_player_state()
         if transition["active"]:
             update_transition()
@@ -595,6 +603,8 @@ while running:
         if game_over:
             draw_game_over()
         draw_transition_overlay()
+    if start_flash["active"]:
+        draw_start_flash_overlay()
     pygame.display.flip()
 
 pygame.quit()
