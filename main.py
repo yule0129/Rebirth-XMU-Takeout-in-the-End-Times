@@ -534,6 +534,8 @@ def reset_game():
     set_message("????????????????? E ??????", 5)
 
 
+show_start_screen = True
+
 # ===== 主循环 =====
 # 每一帧依次处理输入、更新游戏状态、绘制画面，直到玩家关闭窗口。
 running = True
@@ -544,6 +546,13 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
+            if show_start_screen:
+                if event.key in (pygame.K_SPACE, pygame.K_RETURN, pygame.K_e):
+                    show_start_screen = False
+                    reset_game()
+                elif event.key == pygame.K_ESCAPE:
+                    running = False
+                continue
             pressed_keys.add(event.key)
             if event.key == pygame.K_ESCAPE:
                 running = False
@@ -552,11 +561,19 @@ while running:
             elif event.key in (pygame.K_e, pygame.K_SPACE):
                 interact()
         elif event.type == pygame.KEYUP:
-            pressed_keys.discard(event.key)
+            if not show_start_screen:
+                pressed_keys.discard(event.key)
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if show_start_screen and event.button == 1:
+                show_start_screen = False
+                reset_game()
         elif event.type == pygame.WINDOWFOCUSLOST:
-            pressed_keys.clear()
+            if not show_start_screen:
+                pressed_keys.clear()
 
-    if not game_over:
+    if show_start_screen:
+        draw_start_screen()
+    elif not game_over:
         update_player_state()
         if transition["active"]:
             update_transition()
@@ -567,16 +584,17 @@ while running:
             update_weather()
             check_state()
 
-    draw_map()
-    draw_area_labels()
-    draw_guide()
-    draw_prompts()
-    draw_weather()
-    draw_entities()
-    draw_hud()
-    if game_over:
-        draw_game_over()
-    draw_transition_overlay()
+    if not show_start_screen:
+        draw_map()
+        draw_area_labels()
+        draw_guide()
+        draw_prompts()
+        draw_weather()
+        draw_entities()
+        draw_hud()
+        if game_over:
+            draw_game_over()
+        draw_transition_overlay()
     pygame.display.flip()
 
 pygame.quit()

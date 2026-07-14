@@ -5,11 +5,16 @@
 # 基础文字绘制函数：一个按左上角画，一个按中心点画。
 import math
 import time
+from pathlib import Path
 import pygame
 
-from assets import FONT, FONT_BOLD
+from assets import FONT, FONT_BOLD, FONT_TITLE, FONT_SMALL, FONT_MINI, FONT_BIG
 from config import HUD, TILE
 from maps import MAP_DATA
+
+START_BG_IMAGE = None
+START_INTRO_LINES = None
+START_SCREEN_STARTED = time.time()
 
 
 def text(s, x, y, color=(255, 255, 255), f=None):
@@ -2007,3 +2012,180 @@ def draw_transition_overlay():
     layer = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
     layer.fill((0, 0, 0, max(0, min(255, alpha))))
     screen.blit(layer, (0, 0))
+
+
+def draw_cover_image(image):
+    scale = max(WIDTH / image.get_width(), HEIGHT / image.get_height())
+    scaled_size = (int(image.get_width() * scale), int(image.get_height() * scale))
+    scaled = pygame.transform.smoothscale(image, scaled_size)
+    screen.blit(scaled, ((WIDTH - scaled_size[0]) // 2, (HEIGHT - scaled_size[1]) // 2))
+
+
+def draw_start_button(rect):
+    hover = rect.collidepoint(pygame.mouse.get_pos())
+    glow = int(40 + pulse(3) * (76 if hover else 48))
+    halo = pygame.Surface((rect.w + 22, rect.h + 22), pygame.SRCALPHA)
+    pygame.draw.rect(halo, (83, 255, 151, glow), halo.get_rect(), border_radius=8)
+    screen.blit(halo, (rect.x - 11, rect.y - 11))
+    fill = (25, 45, 33) if hover else (13, 25, 22)
+    pygame.draw.rect(screen, fill, rect, border_radius=6)
+    pygame.draw.rect(screen, (114, 255, 154), rect, 2, border_radius=6)
+    pygame.draw.line(screen, (255, 64, 76), (rect.x + 14, rect.y + 7), (rect.x + 42, rect.y + 7), 2)
+    pygame.draw.line(screen, (255, 64, 76), (rect.right - 42, rect.bottom - 7), (rect.right - 14, rect.bottom - 7), 2)
+    center_text("开始配送", rect.centerx, rect.centery - 2, (235, 255, 232), FONT_BOLD)
+
+
+def draw_start_horror_layers(elapsed):
+    tint = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+    tint.fill((0, 0, 0, 42))
+    pygame.draw.rect(tint, (3, 26, 15, 64), (0, 0, WIDTH, HEIGHT))
+    pygame.draw.rect(tint, (0, 0, 0, 86), (0, 0, WIDTH, 132))
+    pygame.draw.rect(tint, (0, 0, 0, 74), (0, 126, WIDTH, HEIGHT - 218))
+    pygame.draw.rect(tint, (0, 0, 0, 116), (0, HEIGHT - 146, WIDTH, 146))
+    screen.blit(tint, (0, 0))
+
+    vignette = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+    for i in range(12):
+        alpha = 11 + i * 8
+        pygame.draw.rect(vignette, (0, 0, 0, alpha), (i * 11, i * 7, WIDTH - i * 22, HEIGHT - i * 14), 1)
+    screen.blit(vignette, (0, 0))
+
+    fog = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+    for i in range(7):
+        y = int(128 + i * 62 + math.sin(elapsed * 0.55 + i) * 13)
+        x = int(-90 + ((elapsed * 18 + i * 137) % (WIDTH + 180)))
+        pygame.draw.rect(fog, (54, 255, 135, 18), (x - 160, y, 330, 18), border_radius=9)
+        pygame.draw.rect(fog, (176, 255, 201, 10), (x - 80, y + 13, 240, 10), border_radius=5)
+    screen.blit(fog, (0, 0))
+
+    for scan_y in range(0, HEIGHT, 5):
+        pygame.draw.line(screen, (0, 0, 0), (0, scan_y), (WIDTH, scan_y), 1)
+
+
+def draw_start_title(elapsed):
+    shake = 1 if int(elapsed * 11) % 17 == 0 else 0
+    title = "重生之我在末日厦大送外卖"
+    center_text(title, WIDTH // 2 + 2 + shake, 48 + 2, (72, 0, 9), FONT_TITLE)
+    center_text(title, WIDTH // 2 - 1, 48, (255, 218, 118), FONT_TITLE)
+    pygame.draw.line(screen, (117, 255, 156), (WIDTH // 2 - 185, 76), (WIDTH // 2 + 185, 76), 1)
+    pygame.draw.line(screen, (136, 23, 34), (WIDTH // 2 - 120, 80), (WIDTH // 2 + 120, 80), 2)
+    center_text("灾变第三日  /  XMU EMERGENCY DELIVERY", WIDTH // 2, 100, (143, 231, 172), FONT_MINI)
+
+
+def draw_start_story_panel(rect):
+    panel = pygame.Surface((rect.w, rect.h), pygame.SRCALPHA)
+    pygame.draw.rect(panel, (4, 10, 10, 104), panel.get_rect(), border_radius=6)
+    pygame.draw.rect(panel, (105, 255, 151, 90), panel.get_rect(), 1, border_radius=6)
+    screen.blit(panel, rect)
+
+    corner = 24
+    color = (151, 255, 172)
+    danger = (210, 35, 45)
+    pygame.draw.line(screen, color, rect.topleft, (rect.x + corner, rect.y), 2)
+    pygame.draw.line(screen, color, rect.topleft, (rect.x, rect.y + corner), 2)
+    pygame.draw.line(screen, color, rect.topright, (rect.right - corner, rect.y), 2)
+    pygame.draw.line(screen, color, rect.topright, (rect.right, rect.y + corner), 2)
+    pygame.draw.line(screen, danger, (rect.x + 24, rect.y + 30), (rect.right - 24, rect.y + 30), 1)
+    text("灾变档案 / 校园配送员幸存记录", rect.x + 28, rect.y + 10, (244, 81, 88), FONT_MINI)
+
+
+def wrap_text_line(line, font, max_width):
+    wrapped = []
+    current = ""
+    for char in line:
+        candidate = current + char
+        if current and font.size(candidate)[0] > max_width:
+            wrapped.append(current)
+            current = char
+        else:
+            current = candidate
+    if current:
+        wrapped.append(current)
+    return wrapped or [""]
+
+
+def load_start_intro():
+    intro_path = Path(__file__).resolve().parent / "引言.txt"
+    try:
+        raw_lines = intro_path.read_text(encoding="utf-8-sig").splitlines()
+    except OSError:
+        raw_lines = ["末日封校，丧尸游荡。", "你是唯一还在接单的校园外卖员。"]
+
+    lines = []
+    previous_blank = False
+    for raw in raw_lines:
+        line = raw.strip()
+        if not line:
+            if not previous_blank:
+                lines.append("")
+            previous_blank = True
+            continue
+        lines.extend(wrap_text_line(line, FONT_SMALL, WIDTH - 220))
+        previous_blank = False
+    return lines
+
+
+def typewriter_visible_lines(lines, elapsed, char_time=0.075, line_pause=0.55):
+    visible_lines = []
+    remaining = elapsed
+    for line in lines:
+        if not line:
+            visible_lines.append("")
+            remaining -= line_pause
+            continue
+
+        reveal_time = len(line) * char_time
+        if remaining <= 0:
+            visible_lines.append("")
+        elif remaining < reveal_time:
+            visible_count = max(1, int(remaining / char_time))
+            visible_lines.append(line[:visible_count])
+        else:
+            visible_lines.append(line)
+        remaining -= reveal_time + line_pause
+    return visible_lines
+
+
+def draw_start_screen():
+    """绘制开始界面：背景图 + 引言文字 + 开始按钮。"""
+    global START_BG_IMAGE, START_INTRO_LINES
+    if START_BG_IMAGE is None:
+        bg_path = Path(__file__).resolve().parent / "start_bg.png"
+        START_BG_IMAGE = pygame.image.load(str(bg_path)).convert()
+    if START_INTRO_LINES is None:
+        START_INTRO_LINES = load_start_intro()
+
+    elapsed = time.time() - START_SCREEN_STARTED
+    draw_cover_image(START_BG_IMAGE)
+    draw_start_horror_layers(elapsed)
+    draw_start_title(elapsed)
+
+    panel = pygame.Rect(WIDTH // 2 - 365, 124, 730, HEIGHT - 220)
+    draw_start_story_panel(panel)
+    line_height = FONT_SMALL.get_height() + 7
+    max_text_height = panel.h - 58
+    y = panel.y + 50
+    visible_intro_lines = typewriter_visible_lines(START_INTRO_LINES, elapsed)
+    last_line_rect = None
+    for line in visible_intro_lines:
+        if not line:
+            y += line_height // 2
+            continue
+        if y > panel.y + 42 + max_text_height:
+            break
+        img = FONT_SMALL.render(line, True, (214, 232, 216))
+        rect = img.get_rect(center=(WIDTH // 2, y))
+        shadow = FONT_SMALL.render(line, True, (65, 9, 12))
+        screen.blit(shadow, (rect.x + 2, rect.y + 1))
+        screen.blit(img, rect)
+        if line:
+            last_line_rect = rect
+        y += line_height
+
+    if last_line_rect and int(time.time() * 2.2) % 2 == 0:
+        cursor = pygame.Rect(last_line_rect.right + 5, last_line_rect.y + 3, 8, last_line_rect.h - 6)
+        pygame.draw.rect(screen, (129, 255, 153), cursor)
+
+    button = pygame.Rect(WIDTH // 2 - 92, HEIGHT - 66, 184, 42)
+    draw_start_button(button)
+    center_text("空格 / 回车 / E / 鼠标点击", WIDTH // 2, HEIGHT - 14, (168, 190, 183), FONT_MINI)
