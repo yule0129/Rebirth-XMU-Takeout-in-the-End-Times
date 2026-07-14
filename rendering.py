@@ -2203,6 +2203,21 @@ def draw_arcade_hearts(x, y):
         pygame.draw.polygon(screen, (255, 164, 174) if active else (91, 101, 114), [(ox+8,y+4),(ox+14,y+4),(ox+16,y+8),(ox+6,y+12),(ox+5,y+8)])
 
 
+def draw_tiny_hearts(x, y):
+    for i in range(3):
+        ox = x + i * 22
+        active = i < player["hp"]
+        color = (255, 77, 92) if active else (48, 58, 58)
+        shade = (104, 20, 30) if active else (21, 28, 28)
+        pts = [
+            (ox + 4, y + 2), (ox + 8, y), (ox + 11, y + 3), (ox + 14, y),
+            (ox + 18, y + 2), (ox + 19, y + 8), (ox + 11, y + 16), (ox + 3, y + 8)
+        ]
+        pygame.draw.polygon(screen, shade, [(px + 1, py + 2) for px, py in pts])
+        pygame.draw.polygon(screen, color, pts)
+        pygame.draw.rect(screen, (255, 168, 172) if active else (75, 91, 88), (ox + 6, y + 4, 4, 2))
+
+
 def draw_minimal_key(label, x, y, w):
     rect = pygame.Rect(x, y, w, 24)
     pygame.draw.rect(screen, (12, 17, 23), rect, border_radius=5)
@@ -2235,59 +2250,70 @@ def draw_portrait_chip(rect):
 
 # 绘制顶部信息栏：标题、时间、分数、订单、血量、天气和操作提示。
 def draw_hud():
-    pygame.draw.rect(screen, (8, 11, 16), (0, 0, WIDTH, HUD))
-    top = pygame.Surface((WIDTH, HUD), pygame.SRCALPHA)
-    pygame.draw.rect(top, (18, 26, 35, 245), (0, 0, WIDTH, HUD - 10), border_radius=0)
-    pygame.draw.polygon(top, (30, 43, 55, 230), [(0, 0), (WIDTH, 0), (WIDTH, 34), (0, 78)])
-    pygame.draw.polygon(top, (31, 21, 31, 155), [(390, 0), (WIDTH, 0), (WIDTH, HUD - 10), (520, HUD - 10)])
-    screen.blit(top, (0, 0))
-    draw_glow_line(0, HUD - 10, WIDTH, (255, 173, 76))
-    pygame.draw.rect(screen, (5, 7, 10), (0, HUD - 8, WIDTH, 8))
+    elapsed = time.time() - game_started_at
 
-    portrait = pygame.Rect(20, 20, 92, 82)
+    pygame.draw.rect(screen, (3, 7, 8), (0, 0, WIDTH, HUD))
+    top = pygame.Surface((WIDTH, HUD), pygame.SRCALPHA)
+    pygame.draw.rect(top, (9, 18, 17, 245), (0, 0, WIDTH, HUD - 7))
+    pygame.draw.polygon(top, (19, 55, 39, 160), [(0, 0), (WIDTH, 0), (WIDTH, 26), (0, 62)])
+    pygame.draw.polygon(top, (73, 13, 20, 110), [(0, 64), (WIDTH, 42), (WIDTH, HUD), (0, HUD)])
+    for x in range(0, WIDTH, 32):
+        pygame.draw.line(top, (62, 255, 128, 18), (x, 0), (x, HUD - 10), 1)
+    screen.blit(top, (0, 0))
+
+    scan = int((time.time() * 90) % (WIDTH + 160)) - 160
+    pygame.draw.rect(screen, (31, 255, 111), (scan, HUD - 14, 120, 2))
+    pygame.draw.line(screen, (56, 255, 129), (0, HUD - 11), (WIDTH, HUD - 11), 1)
+    pygame.draw.line(screen, HORROR_RED, (0, HUD - 7), (WIDTH, HUD - 7), 2)
+    pygame.draw.rect(screen, (2, 4, 5), (0, HUD - 5, WIDTH, 5))
+
+    portrait = pygame.Rect(14, 13, 82, 76)
     draw_portrait_chip(portrait)
 
-    elapsed = time.time() - game_started_at
-    text("重生之我在末日厦大送外卖", 130, 22, (255, 222, 122), FONT_TITLE)
-    text("XMU EMERGENCY DELIVERY", 132, 54, (116, 144, 163), FONT_MINI)
-    text(f"时间  {format_seconds(elapsed)}", 132, 78, (169, 224, 255), FONT_SMALL)
-    text(f"分数  {score}", 258, 78, (255, 236, 160), FONT_SMALL)
-    text(f"救援  {rescued}/{rescued + failed}", 360, 78, (150, 224, 174), FONT_SMALL)
+    title_x = 112
+    text("XMU-03", title_x, 15, (255, 72, 76), FONT_MINI)
+    text("末日厦大外卖应急频道", title_x, 35, (220, 246, 202), FONT_BOLD)
+    pygame.draw.line(screen, (69, 255, 128), (title_x, 58), (475, 58), 1)
+    text("生命", title_x, 68, (255, 226, 126), FONT_MINI)
+    draw_tiny_hearts(title_x + 38, 65)
+    text(f"时间 {format_seconds(elapsed)}", title_x + 128, 68, (129, 255, 174), FONT_MINI)
+    text(f"分数 {score}", title_x + 230, 68, (255, 225, 125), FONT_MINI)
+    text(f"救援 {rescued}/{rescued + failed}", title_x + 304, 68, (130, 255, 174), FONT_MINI)
+    text(f"天气 {WEATHER_TEXT[weather]}", title_x + 390, 68, (164, 226, 211), FONT_MINI)
 
-    task_rect = pygame.Rect(514, 20, 430, 82)
-    draw_soft_panel(task_rect, (32, 29, 38), (214, 139, 80), (214, 139, 80))
+    task_rect = pygame.Rect(610, 15, WIDTH - 626, 70)
+    pygame.draw.rect(screen, (7, 13, 14), task_rect)
+    pygame.draw.rect(screen, (52, 255, 123), task_rect, 1)
+    pygame.draw.line(screen, (122, 29, 35), (task_rect.x + 1, task_rect.y + 24), (task_rect.right - 2, task_rect.y + 24), 2)
     if carrying_order:
         remain = max(0, ORDER_LIMIT - (time.time() - order_start))
         ratio = remain / ORDER_LIMIT
-        title = "正在配送"
+        title = "配送中"
         target = f"{map_name(target_dorm_map)} / {dorm_name(target_dorm_map, target_dorm)}"
-        meter_color = (255, 213, 83) if ratio > 0.35 else (239, 83, 91)
+        meter_color = (255, 206, 67) if ratio > 0.35 else HORROR_RED
         status = f"{int(remain)} 秒"
     else:
         ratio = 1
         title = "等待取餐"
         target = f"{map_name(active_pickup_map)} / {pickup_name(active_pickup_map, active_pickup)}"
-        meter_color = (255, 151, 69)
+        meter_color = (255, 140, 59)
         status = "READY"
-    text(title, task_rect.x + 22, task_rect.y + 14, (255, 192, 101), FONT_BOLD)
-    text(target, task_rect.x + 132, task_rect.y + 15, (250, 242, 224), FONT)
-    draw_task_meter(pygame.Rect(task_rect.x + 22, task_rect.y + 50, 290, 20), ratio, meter_color)
-    text(status, task_rect.x + 326, task_rect.y + 48, (255, 233, 156), FONT_BOLD)
-
-    right = pygame.Rect(WIDTH - 350, 20, 330, 82)
-    draw_soft_panel(right, (23, 32, 41), (101, 184, 159), (101, 184, 159))
-    text("生命", right.x + 20, right.y + 12, (255, 229, 143), FONT_SMALL)
-    draw_arcade_hearts(right.x + 78, right.y + 8)
-    text(f"天气  {WEATHER_TEXT[weather]}", right.x + 20, right.y + 50, (194, 225, 238), FONT_SMALL)
-    draw_minimal_key("WASD", right.x + 204, right.y + 48, 50)
-    draw_minimal_key("E/空格", right.x + 260, right.y + 48, 60)
+    text(title, task_rect.x + 16, task_rect.y + 5, (255, 89, 91), FONT_BOLD)
+    status_img = FONT_BOLD.render(status, True, (255, 230, 126))
+    screen.blit(status_img, (task_rect.right - status_img.get_width() - 16, task_rect.y + 5))
+    target_img = FONT_SMALL.render(target, True, (220, 241, 220))
+    max_w = task_rect.w - 28
+    if target_img.get_width() > max_w:
+        target_img = pygame.transform.smoothscale(target_img, (max_w, target_img.get_height()))
+    screen.blit(target_img, (task_rect.x + 14, task_rect.y + 29))
+    draw_task_meter(pygame.Rect(task_rect.x + 14, task_rect.y + 52, task_rect.w - 28, 11), ratio, meter_color)
 
     if message and time.time() < message_until:
-        msg = FONT_SMALL.render(message, True, (255, 235, 139))
-        msg_rect = msg.get_rect(center=(WIDTH // 2, HUD - 19))
-        bubble = msg_rect.inflate(26, 10)
-        pygame.draw.rect(screen, (12, 15, 20), bubble, border_radius=6)
-        pygame.draw.rect(screen, (221, 164, 74), bubble, 1, border_radius=6)
+        msg = FONT_SMALL.render(message, True, (255, 230, 129))
+        msg_rect = msg.get_rect(center=(WIDTH // 2, HUD + 18))
+        bubble = msg_rect.inflate(22, 8)
+        pygame.draw.rect(screen, (9, 13, 12), bubble)
+        pygame.draw.rect(screen, HORROR_RED, bubble, 1)
         screen.blit(msg, msg_rect)
 
 # 根据当前任务状态，绘制取餐点、送达点或跨地图连接口提示。
